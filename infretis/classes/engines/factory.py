@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from infretis.classes.engines.ams import AMSEngine
 from infretis.classes.engines.cp2k import CP2KEngine
 from infretis.classes.engines.gromacs import GromacsEngine
 from infretis.classes.engines.lammps import LAMMPSEngine
@@ -21,14 +22,19 @@ logger.addHandler(logging.NullHandler())
 def create_engine(settings: dict[str, Any]) -> EngineBase | None:
     """Create an engine from settings.
 
-    Args:
-        settings: Settings for the simulation. This method will
-            use the `"engine"` section of the settings.
+    Parameters
+    ----------
+    settings : dict
+        This dictionary contains the settings for the simulation.
 
-    Returns:
-        The engine created here.
+    Returns
+    -------
+    out : object like :py:class:`.EngineBase`
+        This object represents the engine.
+
     """
     engine_map = {
+        "ams": {"class": AMSEngine},
         "gromacs": {"class": GromacsEngine},
         "cp2k": {"class": CP2KEngine},
         "turtlemd": {"class": TurtleMDEngine},
@@ -54,10 +60,17 @@ def create_engines(config: dict[str, Any]) -> dict[Any, EngineBase | None]:
 
 
 def check_engine(settings: dict[str, Any]) -> bool:
-    """Check the input settings for engine creation.
+    """Check the engine settings.
 
-    Args:
-        settings: The input settings to use for creating the engine.
+    Checks that the input engine settings are correct, and
+    automatically determine the 'internal' or 'external'
+    engine setting.
+
+    Parameters
+    ----------
+    settings : dict
+        The current input settings.
+
     """
     msg = []
     if "engine" not in settings:

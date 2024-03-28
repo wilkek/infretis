@@ -53,6 +53,7 @@ def create_initial_paths():
     state.initiate_ensembles()
     engine: EngineBase = create_engine(config)
     engine.order_function = create_orderparameter(config)
+
     interfaces = np.array(config["simulation"]["interfaces"])
     # the initial configurations for each ensemble are given by the
     # interface location + (interface1 - interface0)/100
@@ -64,10 +65,6 @@ def create_initial_paths():
     # some engine setup
     exe_dir = Path("temporary_load")  # Path(engine.input_path) / "../load/"
     exe_dir = exe_dir.resolve()
-    engine.set_mdrun(
-        {"wmdrun": config["dask"]["wmdrun"][0], "exe_dir": exe_dir}
-    )
-
     exe_dir.mkdir()
     engine.exe_dir = exe_dir
     engine.rgen = np.random.default_rng()
@@ -80,8 +77,10 @@ def create_initial_paths():
         # some ensemble setup
         ensemble = state.ensembles[ens_name]
         ensemble["rgen"] = np.random.default_rng()
-        ensemble["allowmaxlength"] = True
-        ensemble["maxlength"] = 2000
+        ensemble[
+            "allowmaxlength"
+        ] = True  # should be in simulation not tis_set
+        ensemble["maxlength"] = 2000  # should be in simulation not tis_set
 
         # set up a temporary path to start from
         path = InfPath(maxlen=2000)

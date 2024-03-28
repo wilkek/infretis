@@ -17,7 +17,7 @@ def setup_internal(config):
     """Run the various setup functions."""
     # setup logger
     setup_logger()
-
+    print('setup_internal')
     # setup repex
     state = REPEX_state(config, minus=True)
 
@@ -76,7 +76,7 @@ def setup_config(inp="infretis.toml", re_inp="restart.toml"):
     else:
         logger.info("%s file not found, exit.", inp)
         return None
-
+    print('load input')
     # check if restart.toml exist:
     if inp != re_inp and os.path.isfile(re_inp):
         # load restart input:
@@ -97,7 +97,8 @@ def setup_config(inp="infretis.toml", re_inp="restart.toml"):
         curr = config["current"]
 
         # if cstep and steps are equal, we stop here.
-        if curr.get("cstep") == curr.get("restarted_from", -1):
+        if curr.get("cstep") == curr.get("steps", -1):
+            print('loggeddr')
             return None
 
         # set 'restarted_from'
@@ -120,6 +121,7 @@ def setup_config(inp="infretis.toml", re_inp="restart.toml"):
             "size": size,
             "frac": {},
         }
+        print('logger')
 
         # write/overwrite infretis_data.txt
         write_header(config)
@@ -136,12 +138,6 @@ def write_header(config):
     size = config["current"]["size"]
     data_dir = config["output"]["data_dir"]
     data_file = os.path.join(data_dir, "infretis_data.txt")
-    if os.path.isfile(data_file):
-        for i in range(1, 1000):
-            data_file = os.path.join(data_dir, f"infretis_data_{i}.txt")
-            if not os.path.isfile(data_file):
-                break
-
     config["output"]["data_file"] = data_file
     with open(data_file, "w", encoding="utf-8") as write:
         write.write("# " + "=" * (34 + 8 * size) + "\n")

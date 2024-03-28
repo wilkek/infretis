@@ -27,16 +27,10 @@ DEFAULT_MAXLEN: int = 100_000
 
 
 class Path:
-    """Define a Path class to store trajectories."""
+    """Define Path class."""
 
     def __init__(self, maxlen: int = DEFAULT_MAXLEN, time_origin: int = 0):
-        """Initiate a new path.
-
-        Args:
-            maxlen: The maximum length of the path.
-            time_origin: The time origin for the path. Used to keep
-                track of when the path was created.
-        """
+        """Initiate Path class."""
         self.maxlen = maxlen
         self.status: str = ""
         self.generated: tuple[str, float, int, int] | str | None = None
@@ -66,7 +60,7 @@ class Path:
 
     @property
     def adress(self) -> set[Any]:
-        """Get all configurations belonging to the trajectory."""
+        """Compute the maximum order parameter of the path."""
         adresses = set(i.config[0] for i in self.phasepoints)
         return adresses
 
@@ -99,7 +93,7 @@ class Path:
             right: The right interface, equal to left if not specified.
 
         Returns:
-            A string representing where the end point is ('L' - left,
+            out: A string representing where the end point is ('L' - left,
                 'R' - right or None).
 
         """
@@ -127,8 +121,9 @@ class Path:
             right: The right interface, equal to left if not specified.
 
         Returns:
-            A string representing where the start point is ('L' - left,
+            out: A string representing where the start point is ('L' - left,
                 'R' - right or None).
+
         """
         if right is None:
             right = left
@@ -143,7 +138,6 @@ class Path:
         return start
 
     def get_shooting_point(self, rgen: Generator) -> tuple[System, int]:
-        """Pick a random shooting point from the path."""
         ### TODO: probably need an unittest for this to check if correct.
         ### idx = rgen.random_integers(1, self.length - 2)
         idx = rgen.integers(1, self.length - 1)
@@ -162,17 +156,15 @@ class Path:
     def get_path_data(
         self, status: str, interfaces: list[float]
     ) -> dict[str, Any]:
-        """Return basic information about the path.
-
-        The information includes how the path was generated,
-        its status, length, max/min orderparameter and weights.
+        """Return information about the path.
 
         Args:
             status: The current status of the path.
-            interfaces: The interfaces for the simulation.
+            interfaces:: The interfaces for the simulation.
 
         Returns:
-            A dict with information about the path.
+            path_info: A dict with information about the path.
+
         """
         path_info: dict[str, Any] = {
             "generated": self.generated,
@@ -196,14 +188,16 @@ class Path:
     def success(self, target_interface: float) -> bool:
         """Check if the path is successful.
 
-        A path is successful if the maximum order parameter is greater
-        than the given `target_interface`.
+        The check is based on the maximum order parameter and the value
+        of `target_interface`. It is successful if the maximum order parameter
+        is greater than `target_interface`.
 
-        Args:
-            target_interface: The value for which the path is successful.
+        Parameters
+        ----------
+        target_interface : float
+            The value for which the path is successful, i.e. the
+            "target_interface" interface.
 
-        Returns:
-            True if the path is successful.
         """
         return self.ordermax[0] > target_interface
 
@@ -214,7 +208,8 @@ class Path:
             other: The object to add path data from.
 
         Returns:
-            The updated path object (self).
+            self: The updated path object.
+
         """
         for phasepoint in other.phasepoints:
             app = self.append(phasepoint.copy())
@@ -226,7 +221,7 @@ class Path:
         return self
 
     def copy(self) -> Path:
-        """Return a copy of this path."""
+        """Return a copy of the path."""
         new_path = self.empty_path()
         for phasepoint in self.phasepoints:
             new_path.append(phasepoint.copy())
@@ -240,6 +235,7 @@ class Path:
 
     def reverse_velocities(self, system: System) -> None:
         """Reverse the velocities in the system."""
+        # TODO: The path should not modify the system?
         system.vel_rev = not system.vel_rev
 
     def reverse(
@@ -274,7 +270,7 @@ class Path:
 
     def empty_path(self, **kwargs) -> Path:
         """Return an empty path of same class as the current one."""
-        maxlen = kwargs.get("maxlen", DEFAULT_MAXLEN)
+        maxlen = kwargs.get("maxlen", 10000)
         time_origin = kwargs.get("time_origin", 0)
         return self.__class__(maxlen=maxlen, time_origin=time_origin)
 
@@ -331,6 +327,31 @@ class Path:
         """Remove the specified phase point from the path."""
         del self.phasepoints[idx]
 
+    def sorting(
+        self, key: str, reverse: bool = False
+    ):  # TODO: Can this be removed?
+        """Re-order the phase points according to the given key.
+
+        Args:
+            key: The attribute we will sort according to.
+            reverse: If this is False, the sorting is from big to small.
+
+        Yields:
+            The ordered phase points from the path.
+
+        """
+        if key in ("ekin", "vpot"):
+            # TODO: Particles are gone, remove this method
+            sort_after = [getattr(i, key)[0] for i in self.phasepoints]
+        elif key == "order":
+            sort_after = [getattr(i, key)[0] for i in self.phasepoints]
+        else:
+            sort_after = [getattr(i, key) for i in self.phasepoints]
+        idx = np.argsort(sort_after)
+        if reverse:
+            idx = idx[::-1]
+        self.phasepoints = [self.phasepoints[i] for i in idx]
+
     def update_energies(
         self, ekin: np.ndarray | list[float], vpot: np.ndarray | list[float]
     ) -> None:
@@ -343,6 +364,7 @@ class Path:
         Args:
             ekin : The kinetic energies to set.
             vpot : The potential energies to set.
+
         """
         if len(ekin) != len(vpot):
             logger.debug(
@@ -409,12 +431,13 @@ def paste_paths(
             the `maxlen` of the two given paths.
 
     Returns:
-        The resulting path from the merge.
+        new_path: The resulting path from the merge.
 
     Note:
         Some information about the path will not be set here. This must be
         set elsewhere. This includes how the path was generated
         (`path.generated`) and the status of the path (`path.status`).
+
     """
     if maxlen is None:
         if path_back.maxlen == path_forw.maxlen:
@@ -449,8 +472,36 @@ def paste_paths(
     return new_path
 
 
+def load_trajtxt(dirname: str) -> dict[str, Any]:  # TODO: CAN THIS BE REMOVED?
+    """Load the information in traj.txt."""
+    traj_file_name = os.path.join(dirname, "traj.txt")
+    with PathExtFile(traj_file_name, "r") as trajfile:
+        # Just get the first trajectory:
+        traj = next(trajfile.load())
+
+        # Update trajectory to use full path names:
+        for i, snapshot in enumerate(traj["data"]):
+            config = os.path.join(dirname, snapshot[1])
+            traj["data"][i][1] = config
+            reverse = int(snapshot[3]) == -1
+            idx = int(snapshot[2])
+            traj["data"][i][2] = idx
+            traj["data"][i][3] = reverse
+        return traj
+
+
+def load_ordertxt(
+    dirname: str,
+) -> dict[str, np.ndarray]:  # TODO: CAN THIS BE REMOVED?
+    """Load order_txt."""
+    order_file_name = os.path.join(dirname, "order.txt")
+    with OrderPathFile(order_file_name, "r") as orderfile:
+        order = next(orderfile.load())
+        return order["data"][:, 1:]
+
+
 def load_path(pdir: str) -> Path:
-    """Load a path from the given directory."""
+    """Load path."""
     trajtxt = os.path.join(pdir, "traj.txt")
     ordertxt = os.path.join(pdir, "order.txt")
     assert os.path.isfile(trajtxt)
@@ -494,15 +545,15 @@ def _check_path(
 ) -> tuple[bool, str]:
     """Run some checks for the path.
 
-    Args:
-        path: The path we are to set up/fill.
-        path_ensemble: The path ensemble the path could be added to.
-        warning: If True, it output warnings, else only debug info.
+    Parameters
+    ----------
+    path : object like :py:class:`.PathBase`
+        The path we are to set up/fill.
+    path_ensemble : object like :py:class:`.PathEnsemble`
+        The path ensemble the path could be added to.
+    warning : boolean, optional
+        If True, it output warnings, else only debug info.
 
-    Returns:
-        A tuple containing:
-            - True if the path can be accepted.
-            - A string representing the current status of the path.
     """
     start, end, _, cross = path.check_interfaces(path_ensemble.interfaces)
     accept = True
@@ -534,10 +585,19 @@ def _check_path(
 def _load_energies_for_path(path: Path, dirname: str) -> None:
     """Load energy data for a path.
 
-    Args:
-        path: The path we are to set up/fill.
-        dirname: The path to the directory with the input files.
+    Parameters
+    ----------
+    path : object like :py:class:`.PathBase`
+        The path we are to set up/fill.
+    dirname : string
+        The path to the directory with the input files.
+
+    Returns
+    -------
+    None, but may add energies to the path.
+
     """
+    # Get energies if any:
     energy_file_name = os.path.join(dirname, "energy.txt")
     try:
         with EnergyPathFile(energy_file_name, "r") as energyfile:
