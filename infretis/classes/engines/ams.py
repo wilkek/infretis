@@ -219,7 +219,7 @@ class AMSEngine(EngineBase, metaclass=Singleton):
 
         # Update system
         system.set_pos((new_state, idx))
-        system.set_vel(False)
+        system.vel_rev = False
         # Here, we are not concerned if we also got the initial state or not
         # from the AMSWorker. Next state is always the last one.
         system.vpot = states[-1].get_potentialenergy(unit=self.ene_unit)
@@ -422,7 +422,7 @@ class AMSEngine(EngineBase, metaclass=Singleton):
                 set_step_to_zero = False
 
             # Calculate the order parameter using the current system:
-            system.set_vel(reverse)
+            system.vel_rev = True
             system.set_pos((traj_file, i))
             out = self._read_configuration(traj_file, idx=i)
             order = self.calculate_order(system, xyz=out[0], vel=out[1], box=out[2])
@@ -550,7 +550,7 @@ class AMSEngine(EngineBase, metaclass=Singleton):
             # Update system
             kin_new = state.get_kineticenergy(unit=self.ene_unit)
             system.set_pos((genvel, None))
-            system.set_vel(False)
+            system.vel_rev = False
             system.ekin = kin_new
             system.vpot = state.get_potentialenergy(unit=self.ene_unit)
             self._add_state(genvel, state, rewrite=True)

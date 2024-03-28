@@ -52,10 +52,11 @@ INTEGRATOR_MAPS = {
 
 
 class TurtleMDEngine(EngineBase):
-    """
+    """Interface the TurtleMD engine.
+
     To do:
         * Add support for multiple potentials?
-        * Velocity generation adds needs to accound for
+        * Velocity generation adds needs to account for
           the dimensionality of the system
     """
 
@@ -70,6 +71,19 @@ class TurtleMDEngine(EngineBase):
         particles: dict[str, Any],
         box: dict[str, Any],
     ):
+        """Initialize the TurtleMD engine.
+
+        Args:
+            timestep: The simulation timestep.
+            subcycles: The number of subcycles to execute per InfRetis step.
+            temperature: The temperature of the simulation.
+            boltzmann: The value of Boltzmanns constant (kB).
+            integrator: The name of the integrator to use for
+                TurtleMD.
+            potential: The name of the potential to use for TurtleMD.
+            particles: The mass and name of the particles in the system.
+            box: Definition of the simulation box.
+        """
         self.temperature = temperature
         self.timestep = timestep
         self.subcycles = subcycles
@@ -87,7 +101,20 @@ class TurtleMDEngine(EngineBase):
         self.integrator = INTEGRATOR_MAPS[integrator["class"].lower()]
         self.integrator_settings = integrator["settings"]
         potential_class = POTENTIAL_MAPS[potential["class"].lower()]
-        self.potential = [potential_class(**potential["settings"])]
+
+        # if lennard-jones potential we need to set some parameters
+        # after the the class is initiated
+        if potential["class"].lower() == "lennardjones":
+            lj_params = {}
+            for key in potential["settings"]["parameters"]:
+                # turn str into int since .toml cannot read int keys
+                lj_params[int(key)] = potential["settings"]["parameters"][key]
+            # initiate LJ potential class
+            self.potential = [potential_class()]
+            # set the parameters of the LJ potential
+            self.potential[0].set_parameters(lj_params)
+        else:
+            self.potential = [potential_class(**potential["settings"])]
 
         if integrator["class"].lower() in [
             "langevininertia",
@@ -99,7 +126,7 @@ class TurtleMDEngine(EngineBase):
 
         self.dim = self.potential[0].dim
 
-        self.mass = np.array(particles["mass"])
+        self.mass = np.reshape(particles["mass"], (-1, 1))
         self.names = particles["name"]
 
         self.particles = TParticles(dim=self.dim)
@@ -118,15 +145,10 @@ class TurtleMDEngine(EngineBase):
         dumping from a trajectory file. It is not used if we are
         dumping from a single config file.
 
-        Parameters
-        ----------
-        traj_file : string
-            The trajectory file to dump from.
-        idx : integer
-            The frame number we look for.
-        out_file : string
-            The file to dump to.
-
+        Args:
+            traj_file: The trajectory file to dump from.
+            idx: The frame number we look for.
+            out_file: The file to dump to.
         """
         for i, snapshot in enumerate(read_xyz_file(traj_file)):
             if i == idx:
@@ -150,7 +172,8 @@ class TurtleMDEngine(EngineBase):
         msg_file: FileIO,
         reverse: bool = False,
     ) -> tuple[bool, str]:
-        """
+        """Propagate the equations of motion from the given system.
+
         We assume the following:
             * Box does not change (constant volume simulation)
             * Box is orthogonal
@@ -164,7 +187,7 @@ class TurtleMDEngine(EngineBase):
         initial_conf = system.config[0]
         # these variables will be used later
         pos, vel, box, atoms = self._read_configuration(initial_conf)
-        # inititalize turtlemd system
+        # initialize turtlemd system
         particles = TParticles(dim=self.dim)
         for i in range(self.particles.npart):
             particles.add_particle(
@@ -179,7 +202,7 @@ class TurtleMDEngine(EngineBase):
         if hasattr(self, "rgen"):
             seed = self.rgen.integers(0, 1e9)
         else:
-            seed = 42
+            raise ValueError("Missing random generator!")
         tmd_simulation = MDSimulation(
             system=tmd_system,
             integrator=self.integrator(
@@ -259,27 +282,22 @@ class TurtleMDEngine(EngineBase):
     def _read_configuration(
         filename: str,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None, list[str]]:
-        """
-        Read TurtleMD output configuration.
+        """Read TurtleMD output configuration.
 
-        This method is used when we calculate the order parameter.
+        This method reads the specified TurtleMD output configuration and
+        extracts the configuration which includes the positions, velocities,
+        box dimensions and particle names. It is used when calculating the
+        order parameter from a TurtleMD simulation.
 
-        Parameters
-        ----------
-        filename : string
-            The file to read the configuration from.
+        Args:
+            filename: The path to the file to read the configuration from.
 
-        Returns
-        -------
-        xyz : numpy.arrayo
-            The positions.
-        vel : numpy.array
-            The velocities.
-        box : numpy.array or None
-            The box dimensions if we manage to read it.
-        names : list of strings
-            The atom names found in the file.
-
+        Returns:
+            A tuple containing:
+                - xyz: An array of atomic positions.
+                - vel: An array of atomic velocities.
+                - box: An array of box dimensions or None if not available.
+                - names: A list of atom names found in the file.
         """
         for snapshot in read_xyz_file(filename):
             box, xyz, vel, names = convert_snapshot(snapshot)
@@ -287,20 +305,18 @@ class TurtleMDEngine(EngineBase):
         raise ValueError("Missing TurtleMD configuration")
 
     def set_mdrun(self, md_items: dict[str, Any]) -> None:
-        """Remove or rename?"""
+        """Set the execute directory."""
+        # TODO: REMOVE OR RENAME?
         self.exe_dir = md_items["exe_dir"]
 
     def _reverse_velocities(self, filename: str, outfile: str) -> None:
-        """Reverse velocity in a given snapshot.
+        """Reverse velocities in the given snapshot.
 
-        Parameters
-        ----------
-        filename : string
-            The configuration to reverse velocities in.
-        outfile : string
-            The output file for storing the configuration with
-            reversed velocities.
-
+        Args:
+            filename: The path to the file containing the configuration
+                to reverse the velocities of.
+            outfile : The path to the output file for storing the
+                configuration with reversed velocities.
         """
         xyz, vel, box, names = self._read_configuration(filename)
         write_xyz_trajectory(
@@ -310,51 +326,31 @@ class TurtleMDEngine(EngineBase):
     def modify_velocities(
         self, system: System, vel_settings: dict[str, Any]
     ) -> tuple[float, float]:
-        """
-        Modfy the velocities of all particles. Note that default
-        removes the center of mass motion, thus, we need to rescale the
-        momentum to zero by default.
+        """Modify the velocities of all particles.
 
+        Args:
+            system: The system whose particle velocities are to be modified.
+            vel_settings: A dict containing
+                'zero_momentum': boolean, if true we reset the linear momentum
+                  to zero after generating velocities internally.
+
+        Returns:
+            A tuple containing:
+                - dek: The change in kinetic energy as a result of
+                    the velocity modification.
+                - kin_new: The new kinetic energy of the system.
         """
         mass = self.mass
         beta = self.beta
-        rescale = vel_settings.get(
-            "rescale_energy", vel_settings.get("rescale")
-        )
         pos = self.dump_frame(system)
         xyz, vel, box, atoms = self._read_configuration(pos)
-        # to-do: retrieve system.vpot from previous energy file.
-        if None not in ((rescale, system.vpot)) and rescale is not False:
-            print("Rescale")
-            if rescale > 0:
-                kin_old = rescale - system.vpot
-                do_rescale = True
-            else:
-                print("Warning")
-                logger.warning("Ignored re-scale 6.2%f < 0.0.", rescale)
-                return 0.0, kinetic_energy(vel, mass)[0]
-        else:
-            kin_old = kinetic_energy(vel, mass)[0]
-            do_rescale = False
-        if vel_settings.get("aimless", False):
-            vel, _ = self.draw_maxwellian_velocities(vel, mass, beta)
-        else:
-            dvel, _ = self.draw_maxwellian_velocities(
-                vel, mass, beta, sigma_v=vel_settings["sigma_v"]
-            )
-            vel += dvel
-        # make reset momentum the default
-        vel_settings["zero_momentum"] = False
-        if vel_settings.get("zero_momentum", True):
+        kin_old = kinetic_energy(vel, mass)[0]
+        vel, _ = self.draw_maxwellian_velocities(vel, mass, beta)
+        # we do not reset momentum by default
+        if vel_settings.get("zero_momentum", False):
             vel = reset_momentum(vel, mass)
-        if do_rescale:
-            # system.rescale_velocities(rescale, external=True)
-            raise NotImplementedError(
-                "Option 'rescale_energy' is not implemented yet."
-            )
-        conf_out = os.path.join(
-            self.exe_dir, "{}.{}".format("genvel", self.ext)
-        )
+
+        conf_out = os.path.join(self.exe_dir, f"genvel.{self.ext}")
         write_xyz_trajectory(conf_out, xyz, vel, atoms, box, append=False)
         kin_new = kinetic_energy(vel, mass)[0]
         system.config = (conf_out, 0)

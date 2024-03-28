@@ -263,6 +263,8 @@ class REPEX_state:
             if md_items["picked"][ens_num]["eng_name"] in (
                 "cp2k",
                 "turtlemd",
+                "lammps",
+                "gmx",
             ):
                 md_items["picked"][ens_num]["rgen-eng"] = self.rgen.spawn(1)[0]
 
@@ -293,6 +295,7 @@ class REPEX_state:
                 list(valid) + [0 for _ in range(self.n - self._offset)]
             )
         ens += self._offset
+        # print('dog a', ens, valid, traj.path_number, traj.length)
         assert valid[ens] != 0
         # invalidate last prob
         self._last_prob = None
