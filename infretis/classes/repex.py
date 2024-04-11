@@ -244,6 +244,7 @@ class REPEX_state:
 
             # set the worker folder
             w_folder = os.path.join(os.getcwd(), f"worker{md_items['pin']}")
+            print('w_folder', w_folder)
             make_dirs(w_folder)
             md_items["w_folder"] = w_folder
         else:
@@ -260,11 +261,13 @@ class REPEX_state:
                     "wmdrun"
                 ][md_items["pin"]]
             # spawn rgen for {cp2k, turtlemd}
+            # print('w_folder', md_items)
             if md_items["picked"][ens_num]["eng_name"] in (
                 "cp2k",
                 "turtlemd",
                 "lammps",
                 "gmx",
+                "ams"
             ):
                 md_items["picked"][ens_num]["rgen-eng"] = self.rgen.spawn(1)[0]
 

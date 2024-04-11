@@ -24,7 +24,7 @@ from abc import ABCMeta
 from time import sleep
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any
-
+# from infretis.core.tis import ENGINES
 import numpy as np
 
 from infretis.classes.engines.enginebase import EngineBase
@@ -34,7 +34,6 @@ from infretis.classes.engines.engineparts import (
 )
 from infretis.classes.formatter import FileIO
 from infretis.classes.path import Path as InfPath
-
 from scm.plams.trajectories.rkffile import RKFTrajectoryFile
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.amsworker import AMSWorker, AMSWorkerResults
@@ -99,6 +98,7 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         self.dist_unit = "nm"
         self.time_unit = "ps"
         self.name = "ams"
+        # self.exe_dir = '.'
 
         # Store MD states
         self.states = {}
@@ -138,11 +138,15 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         if len(random_velocities_method) > 0:
            logger.debug('AMS setting velocity generation method to "%s"', random_velocities_method)
            self.random_velocities_method = random_velocities_method
-
+        ams_dir = '.'
+        # TODO
+        # if os.path.exists(ams_dir): 
+        #     shutil.rmtree(ams_dir)
+        # os.makedirs(ams_dir)
         # Start AMS worker
         self.worker = AMSWorker(
             settings,
-            workerdir_root=".",
+            workerdir_root=ams_dir,
             keep_crashed_workerdir=True,
             always_keep_workerdir=True
         )
@@ -183,12 +187,10 @@ class AMSEngine(EngineBase, metaclass=Singleton):
 
         """
         state, idx = system.config
-        # print('ifstate', state)
 
         if idx is None:
             prev_ams_state = state  #state already contains exe_dir
             new_ams_state = os.path.join(self.exe_dir, name)  # name does not
-            # print('if_new_ state', new_ams_state)
             
             new_state = new_ams_state
         else:
@@ -266,9 +268,10 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         vel = state.get_velocities(dist_unit=self.dist_unit, time_unit=self.time_unit)
         return xyz, vel, box, None
 
-    def set_mdrun(self, md_items):
+    def set_mdrun(self, exe_dir):
         """Remove or rename?"""
-        self.exe_dir = md_items["exe_dir"]
+        # if self.exe_dir == '.':
+        self.exe_dir = exe_dir
 
     def _reverse_velocities(self, filename, outfile):
         """Reverse velocity in a given snapshot.
@@ -318,8 +321,8 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         """
         if os.path.exists(out_file): # file must never be there before PrepareMD
             self._removefile(out_file)
-        print('prepareMD', out_file)
-        print(self.worker)
+        # if out_file in self.states:
+        #     self._deletestate(out_file)
         self.worker.PrepareMD(out_file)
 
         if traj_file in self.states:
@@ -332,7 +335,13 @@ class AMSEngine(EngineBase, metaclass=Singleton):
             rkf.store_mddata()
             molecule = rkf.get_plamsmol()
             rkf.read_frame(idx, molecule=molecule)
-            self.worker.CreateMDState(out_file, molecule)
+
+            try:
+                self.worker.CreateMDState(out_file, molecule)
+            except:
+                print('CreateMDState', out_file)
+                print(self.worker.workerdir)
+                self.worker.CreateMDState(out_file, molecule)
             if 'Velocities' in rkf.mddata: 
                 vel = rkf.mddata['Velocities']
                 vel = np.reshape(vel, (-1, 3)) # RKFTrajectoryFile returns 1D array
@@ -399,14 +408,13 @@ class AMSEngine(EngineBase, metaclass=Singleton):
 
         # Get the current order parameter:
         order = self.calculate_order(system)
-        # msg_file.write(
-        #     f'# Initial order parameter: {" ".join([str(i) for i in order])}'
-        # )
+        msg_file.write(
+            f'# Initial order parameter: {" ".join([str(i) for i in order])}'
+        )
 
         kin_enes = []
         pot_enes = []
         traj_file = os.path.join(self.exe_dir, name + "." + self.ext)
-        # print('trajfile', traj_file)
         # First, process input snapshot
         initial = system.config[0]
         self._copystate(initial, traj_file) # Copy only state. Traj file will be written in the loop
@@ -516,17 +524,19 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         if vel_settings.get('aimless', False):
             state_name, idx = system.config
             logger.debug('Generating velocities for %s, idx=%s', state_name, idx)
-            randint = np.random.randint(100000, 1000000)
-            genvel = os.path.join(self.exe_dir, f"gen_vel_{randint}." + self.ext)
-
+            # randint = np.random.randint(100000, 1000000)
+            genvel = os.path.join(self.exe_dir, f"gen_vel." + self.ext)
+            print('GENVEL', state_name, genvel)
             if state_name in self.states:
                 if state_name != genvel:
                     # If kicking from new MD state, prepare it
+                    print('copy', state_name, idx, genvel)
                     self._copystate(state_name, genvel, idx=idx)
             else:
                 print('extract', state_name, idx, genvel)
                 self._extract_frame(state_name, idx, genvel)
 
+            print('gen_vel', self.worker.workerdir)
             state = self.worker.GenerateVelocities(
                 genvel,
                 self.temperature,
@@ -539,7 +549,6 @@ class AMSEngine(EngineBase, metaclass=Singleton):
                           state.get_potentialenergy(unit=self.ene_unit),
                           state.get_kineticenergy(unit=self.ene_unit)
             )
-
             # Write rkf file
             logger.debug('AMS setting output file: %s', genvel)
             if os.path.exists(genvel): # File must never be there before PrepareMD
@@ -601,7 +610,6 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         if idx is None:
             logger.debug('AMS Copying snap to snap: %s -> %s', source, dest)
             self.states[dest] = [copy.deepcopy(self.states[source][0])]
-            # print('CopyState', source, dest)
             self.worker.CopyMDState(source, dest)
         else:
             logger.debug('AMS Copying traj snap to snap: %s, %i -> %s', source, idx, dest)
@@ -641,4 +649,5 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         # because the method is also called for removing log files
         # or states are not present when restarting
         if filename in self.states:
+            print('deletestate', filename)
             self._deletestate(filename)

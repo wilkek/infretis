@@ -29,7 +29,7 @@ def scheduler(config):
             md_items = state.prep_md_items(md_items)
 
             # submit job to scheduler
-            fut = client.submit(run_md, md_items, pure=False)
+            fut = client.submit(run_md, md_items, workers=md_items["daskw_id"], pure=False)
             futures.add(fut)
 
     # end client

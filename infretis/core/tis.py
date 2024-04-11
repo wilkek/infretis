@@ -5,7 +5,7 @@ import logging
 import os
 import time
 from typing import TYPE_CHECKING, Any
-
+from dask.distributed import get_worker
 import numpy as np
 
 from infretis.classes.engines.factory import create_engines
@@ -17,7 +17,6 @@ logger.addHandler(logging.NullHandler())
 
 
 ENGINES: dict = {}
-
 
 def def_globals(config):
     """Define global engine and orderparameter variables for each worker.
@@ -85,11 +84,10 @@ def run_md(md_items: dict[str, Any]) -> dict[str, Any]:
     for ens_num in md_items["ens_nums"]:
         pens = md_items["picked"][ens_num]
         engine = ENGINES[md_items["pin"]]
-        engine.set_mdrun(pens)
+        engine.set_mdrun(pens['exe_dir'])
         if "rgen-eng" in pens:
             engine.rgen = pens["rgen-eng"]
         engine.clean_up()
-
     # perform the hw move:
     picked = md_items["picked"]
     _, trials, status = select_shoot(picked, engine)
@@ -113,6 +111,8 @@ def run_md(md_items: dict[str, Any]) -> dict[str, Any]:
             picked[ens_num]["traj"] = trial
 
     md_items.update({"status": status, "wmd_end": time.time()})
+    if "daskw_id" not in md_items:
+        md_items["daskw_id"] = get_worker().name
     return md_items
 
 
@@ -452,7 +452,6 @@ def wire_fencing(
     start_cond: tuple[str, ...] = ("L",),
 ) -> tuple[bool, InfPath, str]:
     """Perform a Wire Fencing move from an initial path.
-
     Args:
         ens_set: Ensemble settings.
         trial_path: The path to perform the move from.
@@ -532,7 +531,6 @@ def wire_fencing(
     # This might get triggered when accepting 0-L paths.
     left, _, right = ens_set["interfaces"]
     # TODO: check this
-    # print(start_cond, tuple(trial_path.get_start_point(left, right)))
     assert set(start_cond) == set(
         trial_path.get_start_point(left, right)
     ), "WF: Path has an implausible start."
@@ -697,7 +695,10 @@ def shoot_backwards(
 
 
 def prepare_shooting_point(
-    path: InfPath, rgen: Generator, engine: EngineBase, ens_set: dict[str, Any]
+    path: InfPath, 
+    rgen: Generator, 
+    engine: EngineBase,     
+    ens_set: dict[str, Any]
 ) -> tuple[System, int, float]:
     """Select and modify velocities for a shooting move.
 
@@ -873,7 +874,6 @@ def retis_swap_zero(
     path0 = path_tmp.empty_path(maxlen=maxlen0)
     for phasepoint in reversed(path_tmp.phasepoints):
         path0.append(phasepoint)
-    # print('lobster a', path_tmp.length, path0.length, allowed)
     # Add second point from [0^+] at the end:
     logger.debug("Adding second point from [0^+]:")
     # Here we make a copy of the phase point, as we will update
@@ -894,7 +894,6 @@ def retis_swap_zero(
         path0.status = "0-L"
     else:
         path0.status = "ACC"
-    # print(path0.status)
 
     # 2. Generate path for [0^+] from [0^-]:
     logger.debug("Creating path for [0^+] from [0^-]")
