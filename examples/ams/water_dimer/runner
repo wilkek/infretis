@@ -1,6 +1,6 @@
 #!/bin/bash
 clear
-rm -rf load amsworker_* worker* infretis_data*.txt sim.log* error.txt* EXIT ams_inp/initial restart.toml infretis.restart slurm-*.err slurm-*.out
+#rm -rf load amsworker_* worker* infretis_data*.txt sim.log* error.txt* EXIT ams_inp/initial restart.toml infretis.restart slurm-*.err slurm-*.out
 cp -r load_copy load
 . $HOME/opt/ams/ams2023.205.r118896/amsbashrc.sh
 

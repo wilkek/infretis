@@ -297,6 +297,7 @@ def create_orderparameter(settings: dict[str, Any]) -> OrderParameter | None:
         "distance": {"class": Distance},
         "dihedral": {"class": Dihedral},
         "angle": {"class": Angle},
+        "cumdist": {"class": CumDist},
         "distancevel": {"class": Distancevel},
         "puckering": {"class": Puckering},
     }
@@ -513,6 +514,80 @@ class Angle(OrderParameter):
         return [angle]
 
 
+class CumDist(OrderParameter):
+    """A distance order parameter.
+
+    This class defines a very simple order parameter which is just
+    the scalar distance between two particles.
+
+    Attributes
+    ----------
+    index : tuple of integers
+        These are the indices used for the two particles.
+        `system.particles.pos[index[0]]` and
+        `system.particles.pos[index[1]]` will be used.
+    periodic : boolean
+        This determines if periodic boundaries should be applied to
+        the distance or not.
+
+    """
+
+    def __init__(self,  indices, periodic: bool = True):
+        """Initialise order parameter.
+
+        Parameters
+        ----------
+        indices : list of tuples of ints
+            This is the indices of the atoms we will use the position of.
+        index : tuple of ints
+            This is the indices of the atom we will use the position of.
+        periodic : boolean, optional
+            This determines if periodic boundary conditions should be
+            applied to the position.
+
+        """
+        for index in indices:
+            _verify_pair(index)
+        pbc = 'Periodic' if periodic else 'Non-periodic'
+        txt = f'{pbc} distance, particles {indices}'
+        super().__init__(description=txt, velocity=False)
+        self.periodic = periodic
+        self.indices = indices
+
+    def calculate(self, system: System) -> list[float]:
+        """Calculate the order parameter.
+
+        Here, the order parameter is just the distance between two
+        particles.
+
+        Parameters
+        ----------
+        system : object like :py:class:`.System`
+            The object containing the positions and box used for the
+            calculation.
+
+        Returns
+        -------
+        out : list of floats
+            The distance order parameter.
+
+        """
+        indices = self.indices
+        len_indices = len(indices)
+        cum_dist = 0
+        for step, index in enumerate(indices):
+    
+            delta = system.pos[index[1]] - system.pos[index[0]]
+            if self.periodic:
+                delta = pbc_dist_coordinate(delta, system.box)
+            lamb = np.sqrt(np.dot(delta, delta))
+            if 2*step < len_indices:
+                cum_dist += lamb
+            else:
+                cum_dist -= lamb
+
+        return [cum_dist]
+    
 class Puckering(OrderParameter):
     """Calculate puckering coordinates for a 6-ring.
 
