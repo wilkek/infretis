@@ -1,0 +1,23 @@
+#!/bin/bash
+clear
+rm -rf load amsworker_* worker* infretis_data*.txt sim.log* error.txt* EXIT ams_inp/initial restart.toml infretis.restart slurm-*.err slurm-*.out
+cp -r load_copy load
+. $HOME/opt/ams/ams2023.205.r118896/amsbashrc.sh
+
+export NSCM=1 # cores used
+export OMP_NUM_THREADS=8 # parallelization on one node 
+#When running on multiple nodes we recommend using pure MPI. To this end, set the OMP_NUM_THREADS environment variable to 1 and set other MPI-related option
+export AMS_COPYSTATE_MOVES_RESULTS=1
+infretisrun -i infretis.toml
+
+# while true; do
+#     sleep 15  # Adjust the delay time before restarting the script
+
+#         echo "Python script crashed. Restarting..."
+#         mv worker*/ amsworker*/ err_wrk/
+#         export NSCM=1 # cores used
+#         export OMP_NUM_THREADS=8 # parallelization
+#         export AMS_COPYSTATE_MOVES_RESULTS=1
+#         infretisrun -i restart.toml
+
+# done
