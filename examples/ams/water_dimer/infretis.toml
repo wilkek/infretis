@@ -2,6 +2,11 @@
 
 [dask]
 workers = 2
+<<<<<<< Updated upstream
+=======
+#wmdrun = ['gmx mdrun -ntomp 1 -ntmpi 1 -pinoffset 0 -pin on',
+#	  'gmx mdrun -ntomp 1 -ntmpi 1 -pinoffset 1 -pin on',]
+>>>>>>> Stashed changes
 wmdrun = []
 
 [simulation]
