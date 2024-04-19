@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-import os
+import os, sys
 import time
 from typing import TYPE_CHECKING, Any
 from dask.distributed import get_worker
@@ -25,8 +25,8 @@ def def_globals(config):
         config: Dictionary with engine settings.
     """
     global ENGINES
-    for i in range(config["dask"]["workers"]):
-        ENGINES[i] = create_engines(config)[config["engine"]["engine"]]
+    # for i in range(config["dask"]["workers"]):
+    ENGINES[0] = create_engines(config)[config["engine"]["engine"]]
     create_orderparameters(ENGINES, config)
 
 
@@ -83,7 +83,7 @@ def run_md(md_items: dict[str, Any]) -> dict[str, Any]:
     # set mdrun, rng, clean_up
     for ens_num in md_items["ens_nums"]:
         pens = md_items["picked"][ens_num]
-        engine = ENGINES[md_items["pin"]]
+        engine = ENGINES[0] #md_items["pin"]]
         engine.set_mdrun(pens['exe_dir'])
         if "rgen-eng" in pens:
             engine.rgen = pens["rgen-eng"]
@@ -91,7 +91,11 @@ def run_md(md_items: dict[str, Any]) -> dict[str, Any]:
     # perform the hw move:
     picked = md_items["picked"]
     _, trials, status = select_shoot(picked, engine)
-
+    if status == 'ACC' and pens['eng_name'] == 'ams':
+        for state in list(engine.states.keys()):
+            if state in engine.oldstates:
+                engine._deletestate(state)
+        engine.oldstates = list(engine.states.keys())
     # Record data
     for trial, ens_num in zip(trials, picked.keys()):
         log_mdlogs(picked[ens_num]["exe_dir"])

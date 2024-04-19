@@ -244,7 +244,6 @@ class REPEX_state:
 
             # set the worker folder
             w_folder = os.path.join(os.getcwd(), f"worker{md_items['pin']}")
-            print('w_folder', w_folder)
             make_dirs(w_folder)
             md_items["w_folder"] = w_folder
         else:
@@ -261,7 +260,6 @@ class REPEX_state:
                     "wmdrun"
                 ][md_items["pin"]]
             # spawn rgen for {cp2k, turtlemd}
-            # print('w_folder', md_items)
             if md_items["picked"][ens_num]["eng_name"] in (
                 "cp2k",
                 "turtlemd",
@@ -298,7 +296,6 @@ class REPEX_state:
                 list(valid) + [0 for _ in range(self.n - self._offset)]
             )
         ens += self._offset
-        # print('dog a', ens, valid, traj.path_number, traj.length)
         assert valid[ens] != 0
         # invalidate last prob
         self._last_prob = None
@@ -539,10 +536,10 @@ class REPEX_state:
                 else:
                     self._random_count += 1
                     # TODO DEBUG PRINTS
-                    print(
-                        f"random #{self._random_count}, "
-                        f"dims = {len(subarr)}"
-                    )
+                    # print(
+                    #     f"random #{self._random_count}, "
+                    #     f"dims = {len(subarr)}"
+                    # )
                     # do n random parallel samples
                     temp = self.random_prob(subarr)
                     out[start:stop, cstart:cstop:direction] = temp

@@ -102,7 +102,7 @@ class AMSEngine(EngineBase, metaclass=Singleton):
 
         # Store MD states
         self.states = {}
-
+        self.oldstates = []
         # Add input path and the input files:
         self.input_path = os.path.abspath(input_path)
 
@@ -321,8 +321,8 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         """
         if os.path.exists(out_file): # file must never be there before PrepareMD
             self._removefile(out_file)
-        # if out_file in self.states:
-        #     self._deletestate(out_file)
+        if out_file in self.states:
+            self._deletestate(out_file)
         self.worker.PrepareMD(out_file)
 
         if traj_file in self.states:
@@ -335,13 +335,7 @@ class AMSEngine(EngineBase, metaclass=Singleton):
             rkf.store_mddata()
             molecule = rkf.get_plamsmol()
             rkf.read_frame(idx, molecule=molecule)
-
-            try:
-                self.worker.CreateMDState(out_file, molecule)
-            except:
-                print('CreateMDState', out_file)
-                print(self.worker.workerdir)
-                self.worker.CreateMDState(out_file, molecule)
+            self.worker.CreateMDState(out_file, molecule)
             if 'Velocities' in rkf.mddata: 
                 vel = rkf.mddata['Velocities']
                 vel = np.reshape(vel, (-1, 3)) # RKFTrajectoryFile returns 1D array
@@ -526,17 +520,13 @@ class AMSEngine(EngineBase, metaclass=Singleton):
             logger.debug('Generating velocities for %s, idx=%s', state_name, idx)
             # randint = np.random.randint(100000, 1000000)
             genvel = os.path.join(self.exe_dir, f"gen_vel." + self.ext)
-            print('GENVEL', state_name, genvel)
             if state_name in self.states:
                 if state_name != genvel:
                     # If kicking from new MD state, prepare it
-                    print('copy', state_name, idx, genvel)
                     self._copystate(state_name, genvel, idx=idx)
             else:
-                print('extract', state_name, idx, genvel)
                 self._extract_frame(state_name, idx, genvel)
 
-            print('gen_vel', self.worker.workerdir)
             state = self.worker.GenerateVelocities(
                 genvel,
                 self.temperature,
@@ -649,5 +639,4 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         # because the method is also called for removing log files
         # or states are not present when restarting
         if filename in self.states:
-            print('deletestate', filename)
             self._deletestate(filename)
