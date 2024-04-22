@@ -73,6 +73,7 @@ AMS and ∞RETIS run in different python versions. We need to apply some tricks 
 ```bash
 cd ~/opt
 git clone https://github.com/SCM-NV/PLAMS.git
+cd PLAMS
 git checkout fix2023
 git revert d1bc21e429efdb336cd034272411c44fa657e038
 ```
