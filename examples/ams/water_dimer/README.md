@@ -47,7 +47,7 @@ Download and install mamba with the following commands (if you don't already hav
 curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
 bash Miniforge3-$(uname)-$(uname -m).sh
 ```
-Now close the terminal.
+Press enter and type yes everytime when prompted. Now close the terminal.
 
 You should see `(base)` in the left of your terminal window after reopening if everything went successfully.
 
@@ -85,7 +85,7 @@ python -m pip install .
 ```
 Now you have plams in your python3.11 stack. To make it work, you need to find the location of your `site-packages/scm/` folder. If you followed the instructions until here, you should be able to run the following lines:
 ```bash
-cd /home/phys/20225982/miniforge3/envs/molmod/lib/python3.11/site-packages/scm/
+cd /home/miniforge3/envs/molmod/lib/python3.11/site-packages/scm/ #if miniforge path is left standard
 cp -r $AMSHOME/scripting/scm/input_parser/ .
 ```
 The setup is done. You should test your install by running the following example simulation.
