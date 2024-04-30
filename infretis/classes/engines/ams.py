@@ -36,7 +36,7 @@ from infretis.classes.formatter import FileIO
 from infretis.classes.path import Path as InfPath
 from scm.plams.trajectories.rkffile import RKFTrajectoryFile
 from scm.plams.interfaces.adfsuite.ams import AMSJob
-from scm.plams.interfaces.adfsuite.amsworker import AMSWorker, AMSWorkerResults
+from scm.plams.interfaces.adfsuite.amsworker import AMSWorker
 from scm.plams.tools.units import Units
 
 # if TYPE_CHECKING:  # pragma: no cover
@@ -103,6 +103,10 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         # Store MD states
         self.states = {}
         self.oldstates = []
+
+        # If input trajectories have different boxsize set to True:
+        self.update_box = True
+
         # Add input path and the input files:
         self.input_path = os.path.abspath(input_path)
 
@@ -118,7 +122,8 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         job = AMSJob.from_input(inp)
         settings = job.settings
         molecule = job.molecule['']
-        # Check input settings
+        if self.update_box:
+            self.molecule_lattice = molecule.lattice        # Check input settings
         self.temperature = settings.input.ams.moleculardynamics.initialvelocities.temperature
         if len(self.temperature) == 0:
             logger.error('AMS: InitialVelocities Temperature was not set!')
@@ -255,7 +260,6 @@ class AMSEngine(EngineBase, metaclass=Singleton):
         if idx is None:
             idx = 0
 
-        out = []
         state = self.states[filename][idx]
 
         box = state.get_latticevectors(unit=self.dist_unit)
@@ -335,6 +339,8 @@ class AMSEngine(EngineBase, metaclass=Singleton):
             rkf.store_mddata()
             molecule = rkf.get_plamsmol()
             rkf.read_frame(idx, molecule=molecule)
+            if self.update_box:
+                molecule.lattice = self.molecule_lattice
             self.worker.CreateMDState(out_file, molecule)
             if 'Velocities' in rkf.mddata: 
                 vel = rkf.mddata['Velocities']
@@ -428,7 +434,6 @@ class AMSEngine(EngineBase, metaclass=Singleton):
             system.set_pos((traj_file, i))
             out = self._read_configuration(traj_file, idx=i)
             order = self.calculate_order(system, xyz=out[0], vel=out[1], box=out[2])
-
             msg_file.write(
                 f'{i} {" ".join([str(j) for j in order])}'
             )
@@ -605,6 +610,7 @@ class AMSEngine(EngineBase, metaclass=Singleton):
             logger.debug('AMS Copying traj snap to snap: %s, %i -> %s', source, idx, dest)
             self.states[dest] = [copy.deepcopy(self.states[source][idx])]
             self.worker.CopyMDState(source+"_"+str(idx), dest)
+        
 
     def _deletestate(self, filename):
         # Dirty usage of filename to recognize trajectories and snapshots
