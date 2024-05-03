@@ -19,6 +19,12 @@ def infretisrun():
         return
     scheduler(config)
 
+def infretismpi():
+    """Run Infretis with MPI."""
+    import dask_mpi
+    dask_mpi.initialize(dashboard=False)
+    infretisrun()
+
 
 def infretisinit():
     """To generate initial *toml template and other features."""

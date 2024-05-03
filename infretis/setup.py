@@ -49,7 +49,7 @@ def setup_dask(state):
     dask.config.set({"distributed.scheduler.work-stealing": False})
 
     # setup client with state.workers workers
-    client = Client(n_workers=state.workers)
+    client = Client()
 
     # in case external engine or o_parameter scripts are used
     for module in state.config["dask"].get("files", []):
