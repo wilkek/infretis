@@ -1,0 +1,26 @@
+#!/bin/bash
+#SBATCH --partition=phys.default.q           # Partition name
+#SBATCH --job-name=AMS.TEST# Job name                      # Number of nodes
+#SBATCH --nodes=2
+#SBATCH --tasks-per-node=2   		 # Number of processes per node
+#SBATCH --cpus-per-task=2
+#SBATCH --time=2400:00:00                # Time limit hrs:min:sec
+#SBATCH --error=slurm-%j.err             # SLURM error
+#SBATCH --output=slurm-%j.out            # SLURM output
+source ~/.bashrc
+module purge
+module load dask/2023.9.2-foss-2023a
+module load mpi4py/3.1.4-gompi-2023a
+module list
+mamba activate molmod
+. ~/opt/ams/ams2023.205.r118896/amsbashrc.sh
+export SCM_USE_LOCAL_OMPI=true
+export SCM_TMPDIR=$SLURM_TMPDIR
+
+#cp $SCMLICENSE $SCMLICENSE.backup
+export SCMLICENSE=/sw/rl8/zen/lic/FloatADF/license_AMS_01-07-2025.txt
+
+# Run an infRETIS calculations
+chmod +x runner 
+./runner
+

@@ -1,0 +1,7 @@
+#!/bin/bash
+        rm -rf worker* amsworker*
+        export NSCM=1 # cores used
+        export OMP_NUM_THREADS=4 # parallelization
+        export AMS_COPYSTATE_MOVES_RESULTS=1
+	which mpirun
+        mpirun -n 2 --mca pml ob1 --mca btl tcp,self,vader infretismpi -i restart.toml 
