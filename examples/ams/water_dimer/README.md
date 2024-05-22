@@ -61,7 +61,7 @@ mamba activate molmod
 cd ~/opt
 git clone https://github.com/wilkek/infretis.git
 cd infretis
-git checkout mpi_ams
+git checkout ams
 python -m pip install -e .
 ```
 
