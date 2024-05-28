@@ -9,8 +9,6 @@
 #SBATCH --output=slurm-%j.out            # SLURM output
 mamba init
 mamba activate molmod
-. $HOME/opt/ams/ams2023.205.r118896/amsbashrc.sh
-$AMSBIN/autolicense nogui -u u21543 -p 8M5NEH3y -m k.wilke@tue.nl
 # Run an infRETIS calculations
 chmod +x runner 
 ./runner
