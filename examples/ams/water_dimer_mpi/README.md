@@ -74,8 +74,7 @@ AMS and ∞RETIS run in different python versions. We need to apply some tricks 
 cd ~/opt
 git clone https://github.com/SCM-NV/PLAMS.git
 cd PLAMS
-git checkout fix2023
-git revert d1bc21e429efdb336cd034272411c44fa657e038
+git checkout oldparser
 ```
 Now you probably get a `vim`-prompt. Just type `:wq` and hit `Enter`. Now you can continue with the next modifications: 
 ```bash
