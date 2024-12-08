@@ -1,0 +1,16 @@
+# Preparing propagation with AMS engine
+# Trajectory label: 008_57437_1_trajB
+# Initial file: /home/konrad/opt/infretis_new/infretis/examples/ams/water_dimer_many_workers/worker9/008_57437_1_conf.rkf
+# Reversing velocities
+# Initial config: /home/konrad/opt/infretis_new/infretis/examples/ams/water_dimer_many_workers/worker9/r_008_57437_1_conf.rkf
+# Initial order parameter: 0.45264972220849387
+0 0.45264972220849387
+1 0.38143105687203427
+2 0.375712979078865
+3 0.369005417881748
+4 0.36371597965137903
+5 0.35729288951707255
+6 0.350862393387826
+7 0.3431412465763649
+8 0.33491317779878044
+# Propagation done.

@@ -618,7 +618,7 @@ class REPEX_state:
                 out[i][j] = f * scaled_arr[i][j]
         return out / max(np.sum(out, axis=1))
 
-    def random_prob(self, arr, n=10_000):
+    def random_prob(self, arr, n=1000):
         """P matrix calculation for specific W matrix."""
         out = np.eye(len(arr), dtype="longdouble")
         current_state = np.eye(len(arr))

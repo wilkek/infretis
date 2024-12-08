@@ -1,0 +1,24 @@
+moleculardynamics
+  initialvelocities
+    randomvelocitiesmethod Exact
+    temperature 300
+    type Random
+  End
+  preserve
+    angularmomentum no
+    centerofmass yes
+    momentum no
+  End
+  thermostat
+    type none
+  End
+  timestep 1.0
+End
+
+task pipe
+
+Engine forcefield
+  nonbondedcutoff 999.0
+  type GAFF
+EndEngine
+

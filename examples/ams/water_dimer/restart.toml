@@ -1,0 +1,141 @@
+[runner]
+workers = 2
+wmdrun = [
+    1,
+    1,
+]
+
+[simulation]
+interfaces = [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+]
+steps = 100
+seed = 0
+load_dir = "load"
+shooting_moves = [
+    "sh",
+    "sh",
+    "wf",
+    "wf",
+    "wf",
+]
+ensemble_engines = [
+    [
+        "engine",
+    ],
+    [
+        "engine",
+    ],
+    [
+        "engine",
+    ],
+    [
+        "engine",
+    ],
+    [
+        "engine",
+    ],
+]
+
+[simulation.tis_set]
+maxlength = 20000
+aimless = true
+allowmaxlength = false
+zero_momentum = true
+temperature = 300
+quantis = false
+accept_all = false
+
+[engine]
+class = "ams"
+engine = "ams"
+timestep = 0.001
+input_path = "ams_inp"
+subcycles = 5
+
+[orderparameter]
+class = "Distance"
+index = [
+    0,
+    3,
+]
+periodic = false
+
+[output]
+backup = "backup"
+data_dir = "./"
+order-file = 1
+energy-file = 1
+trajectory-file = -1
+screen = 1
+pattern = false
+delete_old = true
+data_file = "./infretis_data.txt"
+
+[current]
+traj_num = 112
+cstep = 100
+active = [
+    108,
+    109,
+    105,
+    111,
+    110,
+]
+locked = []
+size = 5
+
+[current.frac]
+105 = [
+    "0.0",
+    "0.24771133156639865366",
+    "3.761376070308757471",
+    "1.2777967003824213199",
+    "1.7131158977424225552",
+    "0.0",
+]
+108 = [
+    "4.0",
+    "0.0",
+    "0.0",
+    "0.0",
+    "0.0",
+    "0.0",
+]
+109 = [
+    "0.0",
+    "2.4889792064105445652",
+    "0.5110207935894554346",
+    "0.0",
+    "0.0",
+    "0.0",
+]
+110 = [
+    "0.0",
+    "0.18547142762547426255",
+    "0.54835030776227172515",
+    "0.30181761389257181003",
+    "0.9643606507196822021",
+    "0.0",
+]
+111 = [
+    "0.0",
+    "0.024483668618608778702",
+    "0.18841779763016320541",
+    "0.25706453426768241004",
+    "0.53003399948354560576",
+    "0.0",
+]
+
+[current.rng_state]
+bit_generator = "PCG64"
+has_uint32 = 0
+uinteger = 0
+
+[current.rng_state.state]
+state = 308359313048189541886814620088648658812
+inc = 87136372517582989555478159403783844777

@@ -279,7 +279,8 @@ class EngineBase(metaclass=ABCMeta):
         """
         logger.debug('Running propagate with: "%s"', self.description)
 
-        prefix = ens_set["ens_name"] + "_" + str(counter())
+        prefix = ens_set["ens_name"] + "_" + str(os.getpid()) + "_" + str(counter())
+
         if reverse:
             logger.debug("Running backward in time.")
             name = prefix + "_trajB"

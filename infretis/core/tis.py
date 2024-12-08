@@ -18,6 +18,7 @@ logger.addHandler(logging.NullHandler())
 
 
 ENGINES: dict = {}
+PENGINES: dict = {}
 
 
 def def_globals(config):
@@ -27,9 +28,16 @@ def def_globals(config):
         config: Dictionary with .toml settings.
     """
     global ENGINES
+    global PENGINES
 
     ENGINES, engine_occ = create_engines(config)
     create_orderparameters(ENGINES, config)
+    engines = {}
+    for i, engine in enumerate(ENGINES['engine']):
+        engines[i] = [i, engine]
+    PENGINES['engine'] = engines
+    # print('occ', engine_occ)
+    # ENGINES["engine"] = ENGINES["engine"][0]
     return engine_occ
 
 
@@ -101,7 +109,7 @@ def run_md(md_items: dict[str, Any]) -> dict[str, Any]:
                 minus=minus,
             )
             picked[ens_num]["traj"] = trial
-
+    # print('md_items', md_items)
     md_items.update({"status": status, "wmd_end": time.time()})
     return md_items
 
@@ -275,17 +283,27 @@ def select_shoot(
 
     # set engine, might also depend on chosen move
     engines = {}
+    pengines = {}
     msg = "Selected engines "
     for ens_num in picked.keys():
         pens = picked[ens_num]
+        # print('picked', picked)
+        # print('pens', pens["eng_idx"].items())
         if len(picked) == 2:
             engines[ens_num] = [
                 ENGINES[eng][idx] for eng, idx in pens["eng_idx"].items()
+            ]
+            pengines[ens_num] = [
+                PENGINES[eng][idx] for eng, idx in pens["eng_idx"].items()
             ]
         else:
             engines[0] = [
                 ENGINES[eng][idx] for eng, idx in pens["eng_idx"].items()
             ]
+            pengines[0] = [
+                PENGINES[eng][idx] for eng, idx in pens["eng_idx"].items()
+            ]
+        # print(PENGINES)
         msg += f"{list(pens['eng_idx'].keys())} "
     logger.info(msg + "for MC move.")
 
@@ -293,6 +311,7 @@ def select_shoot(
     for key in engines.keys():
         for engine in engines[key]:
             engine.set_mdrun(pens)
+            print(pens)
             if "rgen-eng" in pens:
                 engine.rgen = pens["rgen-eng"]
             engine.clean_up()

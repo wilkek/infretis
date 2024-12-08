@@ -48,7 +48,7 @@ class aiorunner:
                 max_workers=n_workers,
                 initializer=worker_initializer,
                 initargs=(self._counter,),
-                mp_context=multiprocessing.get_context("fork"),
+                #mp_context=multiprocessing.get_context("fork"),
             )
         )
         self._stop_event = asyncio.Event()
@@ -125,7 +125,7 @@ class aiorunner:
                 # Mask the task as done
                 queue.task_done()
             except asyncio.QueueEmpty:
-                await asyncio.sleep(0.02)
+                await asyncio.sleep(1.02)
 
     async def _add_work_to_queue(
         self, work_unit: dict[str, Any]
@@ -157,7 +157,7 @@ class aiorunner:
             )
         future = asyncio.run(self._add_work_to_queue(work_unit))
         # Need to wait otherwise some race condition can occur
-        time.sleep(0.05)
+        time.sleep(1.05)
         return future
 
     async def _start_tasks(self) -> None:
@@ -179,7 +179,7 @@ class aiorunner:
     async def wait_for_tasks_to_end(self) -> None:
         """Async function waiting for tasks to end."""
         while len(asyncio.all_tasks(self._loop)) > 0:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(1.1)
 
     def n_workers(self) -> int:
         """Return runner number of workers."""
@@ -190,7 +190,7 @@ class aiorunner:
         # Make sure there is no more work in the queue
         # before dispatching the task stopping event
         while self._queue.qsize() > 0:
-            time.sleep(0.1)
+            time.sleep(1.1)
 
         # Stop ongoing tasks
         self._stop_event.set()

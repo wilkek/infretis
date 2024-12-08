@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --partition=phys.bigmem.q           # Partition name
+#SBATCH --nodelist=phys-computek001
+#SBATCH --job-name=AMS.TEST              # Job name
+#SBATCH --nodes=1                        # Number of nodes
+#SBATCH --ntasks-per-node=16             # Number of processes per node
+#SBATCH --time=2400:00:00                # Time limit hrs:min:sec
+#SBATCH --error=slurm-%j.err             # SLURM error
+#SBATCH --output=slurm-%j.out            # SLURM output
+mamba init
+mamba activate molmod
+# Run an infRETIS calculations
+chmod +x runner 
+./runner
+

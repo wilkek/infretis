@@ -1,0 +1,5 @@
+# Cycle: 14, status: ACC, move: None
+#     Time      Potential        Kinetic
+         0     -14.180651      22.449076            nan            nan
+         1     -15.525369      23.623978            nan            nan
+         2     -14.180651      22.449076            nan            nan

@@ -1,0 +1,14 @@
+# Preparing propagation with AMS engine
+# Trajectory label: 035_57435_2_trajF
+# Initial file: /home/konrad/opt/infretis_new/infretis/examples/ams/water_dimer_many_workers/worker7/035_57435_2_conf.rkf
+# Initial config: /home/konrad/opt/infretis_new/infretis/examples/ams/water_dimer_many_workers/worker7/035_57435_2_conf.rkf
+# Initial order parameter: 0.4961334145962196
+0 0.4961334145962196
+1 0.49264747008396526
+2 0.48879154585122464
+3 0.4851382018240564
+4 0.48181859782930464
+5 0.47725293667989843
+6 0.47381084947133195
+7 0.46937187159139215
+# Propagation done.

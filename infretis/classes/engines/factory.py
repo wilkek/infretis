@@ -9,6 +9,7 @@ from infretis.classes.engines.cp2k import CP2KEngine
 from infretis.classes.engines.gromacs import GromacsEngine
 from infretis.classes.engines.lammps import LAMMPSEngine
 from infretis.classes.engines.turtlemdengine import TurtleMDEngine
+from infretis.classes.engines.ams_lukas import AMSEngine
 from infretis.core.core import create_external, generic_factory
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -37,6 +38,7 @@ def create_engine(
         "cp2k": {"class": CP2KEngine},
         "turtlemd": {"class": TurtleMDEngine},
         "lammps": {"class": LAMMPSEngine},
+        "ams": {"class": AMSEngine},
     }
 
     if settings[eng_key]["class"].lower() not in engine_map:
@@ -87,7 +89,6 @@ def create_engines(
             check_engine(config, eng_key=engine)
             engine_occ[engine].append(-1)
             engines[engine].append(create_engine(config, eng_key=engine))
-
     return engines, engine_occ
 
 
@@ -158,5 +159,5 @@ def assign_engines(
     if out == {}:
         msg = "Did not find a free engine, this should not happen!"
         raise ValueError(msg)
-
+    #out = {"engine":pin}
     return out
