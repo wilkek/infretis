@@ -1,4 +1,5 @@
 """Defines the main REPEX class for path handling and permanent calc."""
+
 import logging
 import os
 import sys

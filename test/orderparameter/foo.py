@@ -1,4 +1,5 @@
 """Some external order parameters for infretis."""
+
 from infretis.classes.orderparameter import OrderParameter
 
 

@@ -1,4 +1,5 @@
 """Test velocity functions in all engines."""
+
 import pathlib
 
 import numpy as np
@@ -81,6 +82,7 @@ def return_cp2k_engine():
     }
     return engine
 
+
 def return_ase_engine():
     """Set up an ase engine for the H2 system."""
     ase_toml_path = HERE / "../../examples/ase/H2/infretis0.toml"
@@ -88,7 +90,9 @@ def return_ase_engine():
     toml_file = ase_toml_path
     with open(toml_file, "rb") as rfile:
         config = tomli.load(rfile)
-    config["engine"]["calculator_settings"]["module"] = str(calc_path.resolve())
+    config["engine"]["calculator_settings"]["module"] = str(
+        calc_path.resolve()
+    )
     engine = create_engine(config)
     engine.input_path = HERE / "../../examples/ase/H2"
     engine.vel_settings = {

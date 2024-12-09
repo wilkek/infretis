@@ -10,7 +10,7 @@ from infretis.classes.engines.cp2k import CP2KEngine
 from infretis.classes.engines.gromacs import GromacsEngine
 from infretis.classes.engines.lammps import LAMMPSEngine
 from infretis.classes.engines.turtlemdengine import TurtleMDEngine
-from infretis.classes.engines.ams_lukas import AMSEngine
+from infretis.classes.engines.ams import AMSEngine
 from infretis.core.core import create_external, generic_factory
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -161,5 +161,5 @@ def assign_engines(
     if out == {}:
         msg = "Did not find a free engine, this should not happen!"
         raise ValueError(msg)
-    #out = {"engine":pin}
+    # out = {"engine":pin}
     return out

@@ -1,4 +1,5 @@
 """Test methods for doing TIS."""
+
 import os
 from collections.abc import Callable
 from pathlib import PosixPath
