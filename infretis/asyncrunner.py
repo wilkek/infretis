@@ -43,13 +43,11 @@ class aiorunner:
         """
         self._n_workers: int = n_workers
         self._counter = multiprocessing.Value("i", 0)
-        self._executor: concurrent.futures.Executor = (
-            concurrent.futures.ProcessPoolExecutor(
-                max_workers=n_workers,
-                initializer=worker_initializer,
-                initargs=(self._counter,),
-                # mp_context=multiprocessing.get_context("fork"),
-            )
+        self._executor: concurrent.futures.Executor = concurrent.futures.ProcessPoolExecutor(
+            max_workers=n_workers,
+            initializer=worker_initializer,
+            initargs=(self._counter,),
+            # mp_context=multiprocessing.get_context("fork"),
         )
         self._stop_event = asyncio.Event()
         self._loop = asyncio.new_event_loop()
@@ -242,7 +240,7 @@ class future_list:
             for fut in list(self._futures):
                 if fut.done():
                     if fut.exception() is None:
-                        end_times.append(fut.result().get("wmd_end",0.0))
+                        end_times.append(fut.result().get("wmd_end", 0.0))
                         done_futures.append(fut)
                     else:
                         return fut

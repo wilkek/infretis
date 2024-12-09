@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2023, infRETIS Development Team.
 # Distributed under the LGPLv2.1+ License. See LICENSE for more info.
 """A AMS external MD integrator interface.
@@ -23,7 +22,6 @@ import weakref
 from infretis.classes.engines.enginebase import EngineBase
 from infretis.classes.engines.engineparts import (
     box_matrix_to_list,
-    look_for_input_files,
 )
 from infretis.classes.formatter import FileIO
 from infretis.classes.path import Path as InfPath
@@ -125,9 +123,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             quit(1)
         self.temperature = float(self.temperature)
         ams_timestep = settings.input.ams.moleculardynamics.timestep
-        if (
-            len(ams_timestep) == 0
-        ):  # Despite there is a default for timestep in AMS, we do not know it here
+        if len(ams_timestep) == 0:
+            # Default timestep in AMS, but unknown it here
             logger.error("AMS: Timestep was not set!")
             quit(1)
         ams_timestep = float(ams_timestep) * Units.conversion_ratio(
@@ -156,16 +153,15 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             always_keep_workerdir=True,
         )
         # Create initial MD state
-        self.input_files["conf"] = f"initial"
+        self.input_files["conf"] = "initial"
         initial = os.path.join(input_path, self.input_files["conf"])
         self.worker.CreateMDState(initial, molecule)
         if os.path.exists(
             initial
         ):  # Before setting PrepareMD, a file must never be there
             self._removefile(initial)
-        self.worker.PrepareMD(
-            "../" + initial
-        )  # self.exe_dir is not set yet and we don't want the file in amsworker folder
+        self.worker.PrepareMD("../" + initial)
+        # self.exe_dir is not set yet, we don't want the file in amsworker
         state = self.worker.MolecularDynamics(
             initial, nsteps=0
         )  # Initialize first state, save traj
@@ -290,7 +286,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         self.exe_dir = md_items["exe_dir"]
         self.ens_name = md_items["ens"]["ens_name"] + "_"
         logger.info(
-            f"self.exe_dir {self.exe_dir} md_items['exe_dir'] {md_items['exe_dir']}"
+            f"self.exe_dir {self.exe_dir}" +
+             f" md_items['exe_dir'] {md_items['exe_dir']}"
         )
         delete_states = []
         for state in self.oldstates:
@@ -300,7 +297,6 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             self._deletestate(state)
 
         self.oldstates = self.states.keys()
-
 
     def _reverse_velocities(self, filename, outfile):
         """Reverse velocity in a given snapshot.
@@ -617,7 +613,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
                 setsteptozero=True,
             )
 
-            # This will probably also be removed later, but nice way to check velocity generation
+            # Can be removed, but nice way to check velocity generation
             logger.info(
                 "AMS Epot: %f Ekin: %f",
                 state.get_potentialenergy(unit=self.ene_unit),
