@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Dict
 
 from infretis.classes.engines.ase_engine import ASEEngine
 from infretis.classes.engines.cp2k import CP2KEngine
 from infretis.classes.engines.gromacs import GromacsEngine
 from infretis.classes.engines.lammps import LAMMPSEngine
-from infretis.classes.engines.turtlemdengine import TurtleMDEngine
+# from infretis.classes.engines.turtlemdengine import TurtleMDEngine
 from infretis.classes.engines.ams import AMSEngine
 from infretis.core.core import create_external, generic_factory
 
@@ -22,8 +22,8 @@ logger.addHandler(logging.NullHandler())
 
 
 def create_engine(
-    settings: dict[str, Any], eng_key: str = "engine"
-) -> EngineBase | None:
+    settings: Dict[str, Any], eng_key: str = "engine"
+) -> Optional[EngineBase]:
     """Create an engine from settings.
 
     Args:
@@ -37,7 +37,7 @@ def create_engine(
     engine_map = {
         "gromacs": {"class": GromacsEngine},
         "cp2k": {"class": CP2KEngine},
-        "turtlemd": {"class": TurtleMDEngine},
+        # "turtlemd": {"class": TurtleMDEngine},
         "lammps": {"class": LAMMPSEngine},
         "ams": {"class": AMSEngine},
         "ase": {"class": ASEEngine},
@@ -50,8 +50,8 @@ def create_engine(
 
 
 def create_engines(
-    config: dict[str, Any]
-) -> tuple[dict[Any, EngineBase], dict[Any, int]]:
+    config: Dict[str, Any]
+) -> Tuple[Dict[Any, EngineBase], Dict[Any, int]]:
     """Create the engines for a infretis simulation.
 
     We create min(n_engines_type_i, n_workers) engines in a dict
@@ -75,9 +75,9 @@ def create_engines(
         engine_occ: A dictionary containing lists of worker pins
 
     """
-    engine_count: dict = {}
-    engines: dict = {}
-    engine_occ: dict = {}
+    engine_count: Dict = {}
+    engines: Dict = {}
+    engine_occ: Dict = {}
     # get all unique engines with number of occurences
     for engine in config["simulation"]["ensemble_engines"]:
         for engine_i in engine:
@@ -94,7 +94,7 @@ def create_engines(
     return engines, engine_occ
 
 
-def check_engine(settings: dict[str, Any], eng_key: str) -> bool:
+def check_engine(settings: Dict[str, Any], eng_key: str) -> bool:
     """Check the input settings for engine creation.
 
     Args:
@@ -122,8 +122,8 @@ def check_engine(settings: dict[str, Any], eng_key: str) -> bool:
 
 
 def assign_engines(
-    engine_occ: dict[str, list], eng_names, pin
-) -> dict[Any, int]:
+    engine_occ: Dict[str, List], eng_names, pin
+) -> Dict[Any, int]:
     """Assign non-occupied engine(s) to a worker based on the engine_occ dict.
 
     Args:

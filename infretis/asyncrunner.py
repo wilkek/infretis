@@ -8,7 +8,8 @@ import multiprocessing
 import threading
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Dict, Optional, List
+from asyncio import Future
 
 from infretis.classes.formatter import get_log_formatter
 
@@ -34,7 +35,7 @@ class aiorunner:
     workers on-the-fly.
     """
 
-    def __init__(self, config: dict, n_workers: int = 1) -> None:
+    def __init__(self, config: Dict, n_workers: int = 1) -> None:
         """Init function of runner.
 
         Args:
@@ -56,8 +57,8 @@ class aiorunner:
         )
         self._thread.start()
         self._queue: asyncio.Queue[Any] = asyncio.Queue()
-        self._task_f: Callable | None = None
-        self._tasks: list[asyncio.Task[Any]] | None = None
+        self._task_f: Optional[Callable] = None
+        self._tasks: Optional[List[asyncio.Task[Any]]] = None
 
     def start(self) -> None:
         """Launch background tasks."""
@@ -88,7 +89,7 @@ class aiorunner:
     async def _task_wrapper(
         self,
         stop_event: asyncio.Event,
-        queue: asyncio.Queue[Any],
+        queue: asyncio.Queue,
         executor: concurrent.futures.Executor,
         taskID: int,
     ) -> None:
@@ -126,7 +127,7 @@ class aiorunner:
                 await asyncio.sleep(1.02)
 
     async def _add_work_to_queue(
-        self, work_unit: dict[str, Any]
+        self, work_unit: Dict[str, Any]
     ) -> asyncio.Future:
         """Async function adding work to queue, returns a future.
 
@@ -139,8 +140,7 @@ class aiorunner:
         future: asyncio.Future = asyncio.Future()
         await self._queue.put((work_unit, future))
         return future
-
-    def submit_work(self, work_unit: dict[str, Any]) -> asyncio.Future:
+    def submit_work(self, work_unit: Dict[str, Any]) -> Future:
         """Submit work to the runner.
 
         Args:
@@ -221,20 +221,23 @@ class future_list:
 
     def __init__(self) -> None:
         """Initialize future list."""
-        self._futures: list[asyncio.Future] = []
+        from typing import List
+        self._futures: List[asyncio.Future] = []
 
     def add(self, future: asyncio.Future) -> None:
         """Add a future to list."""
         self._futures.append(future)
 
-    def as_completed(self) -> asyncio.Future | None:
+    from typing import Optional
+
+    def as_completed(self) -> Optional[asyncio.Future]:
         """Get future as they are done in order of completion times.
         Return:
             return the first-to-complete future from the list
             or return None when the list is empty.
         """
         future_out = None
-        done_futures: list[asyncio.Future] = []
+        done_futures: List[asyncio.Future] = []
         end_times = []
         while len(self._futures) > 0 and not done_futures:
             for fut in list(self._futures):

@@ -13,10 +13,8 @@ AMSEngine (:py:class:`.AMSEngine`)
 import logging
 import os
 import copy
-from abc import ABCMeta
-from typing import Any
+from typing import Any, Tuple, Dict
 
-# from infretis.core.tis import ENGINES
 import numpy as np
 import weakref
 from infretis.classes.engines.enginebase import EngineBase
@@ -35,19 +33,6 @@ from infretis.classes.engines.enginebase import counter
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 logger.addHandler(logging.NullHandler())
-
-
-class Singleton(ABCMeta):
-    _instances = {}
-
-    def __new__(mcs, name, bases, dct):
-        return super().__new__(mcs, name, bases, dct)
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            instance = super(Singleton, cls).__call__(*args, **kwargs)
-            cls._instances[cls] = instance
-        return cls._instances[cls]
 
 
 class AMSEngine(EngineBase):  # , metaclass=Singleton):
@@ -407,10 +392,10 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         name: str,
         path: InfPath,
         system: System,
-        ens_set: dict[str, Any],
+        ens_set: Dict,
         msg_file: FileIO,
         reverse: bool = False,
-    ) -> tuple[bool, str]:
+    ) -> Tuple[bool, str]:
         """
         Propagate with AMS from the current system configuration.
 
@@ -540,8 +525,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         return success, status
 
     def modify_velocities(
-        self, system: System, vel_settings: dict[str, Any]
-    ) -> tuple[float, float]:
+        self, system: System, vel_settings: Dict[str, Any]
+    ) -> Tuple[float, float]:
         """Modify the velocities of the current state.
 
         This method will modify the velocities of a time slice.
