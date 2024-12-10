@@ -286,8 +286,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         self.exe_dir = md_items["exe_dir"]
         self.ens_name = md_items["ens"]["ens_name"] + "_"
         logger.info(
-            f"self.exe_dir {self.exe_dir}" +
-             f" md_items['exe_dir'] {md_items['exe_dir']}"
+            f"self.exe_dir {self.exe_dir}"
+            + f" md_items['exe_dir'] {md_items['exe_dir']}"
         )
         delete_states = []
         for state in self.oldstates:
