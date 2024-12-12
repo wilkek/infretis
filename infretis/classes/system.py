@@ -25,10 +25,10 @@ class System:
         self.order: List[float] = [-float("nan")]
         self.pos: np.ndarray = np.zeros(0)
         self.vel: np.ndarray = np.zeros(0)
+        self.vel_rev: bool = False
         self.ekin: Optional[float] = None
         self.vpot: Optional[float] = None
         self.box: Optional[np.ndarray] = np.zeros((3, 3))
-        self.box: np.ndarray | None = np.zeros((3, 3))
         self.temperature: Dict[str, float] = {}
 
     def copy(self) -> System:
