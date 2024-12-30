@@ -1,0 +1,76 @@
+
+ *******************************************************************************
+ *                                                                             *
+ *  --------------------------------                                           *
+ *   Amsterdam Modeling Suite (AMS)              2024.105                      *
+ *  --------------------------------                                           *
+ *                                               r241119 2024-11-19 54abb3de   *
+ *                                                                             *
+ *                                                                             *
+ *                              =================                              *
+ *                              |               |                              *
+ *                              |     A M S     |                              *
+ *                              |               |                              *
+ *                              =================                              *
+ *                                                                             *
+ *                                                                             *
+ *   Online information and documentation:  https://www.scm.com/support/       *
+ *   E-mail:  support@scm.com   info@scm.com                                   *
+ *                                                                             *
+ *   Scientific publications using AMS results must be properly referenced     *
+ *   See the User Manuals (or the web site) for recommended citations          *
+ *   The terms and conditions of the End User License Agreement apply to       *
+ *   the use of AMS, https://www.scm.com/license-terms/                        *
+ *                                                                             *
+ **********************  x86_64_linux_intel / intelmpi  ************************
+ 
+ Licensed to: Dr. P. Bobbert / Desktop Site license Eindhoven University of Technology / Eindhoven / The Netherlands 2024-07-03 09:42:24
+ SCM User ID: u21543
+  
+ AMS 2024.105  RunTime: Dec30-2024 18:03:10  ShM Nodes: 1  Procs: 1
+
+ AMS jobname: amsworker
+ AMS jobid  : 2068180313
+
+ Start   directory: /home/konrad/opt/infretis_new/infretis/test/engines/amsworker_ibwyoled/
+ Results directory: /home/konrad/opt/infretis_new/infretis/test/engines/amsworker_ibwyoled/
+ Scratch directory: /tmp/amstmp_amsworker_kid0.2068180313/
+
+ RNG seed: -315001762 -1596746986 -396759597 520508145 551237274 1676181739 1797109085 -1117301523
+
+       ********************
+       * Pipe Application *
+       ********************
+ 
+------------------------
+MM Engine configuration
+------------------------
+Force field type             UFF
+ 
+ 
+------------------------
+UFF Engine configuration
+------------------------
+UFF Parameters file          general_db
+UFF Elements file            elements_db
+UFF MMAtomTypes file         mmatomtypes_db
+ 
+  atom type UFF index
+          1         1
+ 
+--------------------
+ Molecular Dynamics 
+--------------------
+ 
+          Step       Time    Temp.         E Tot         E Pot         E Kin  <Temp.>       <E Tot>       <E Pot>       <E Kin>
+                     (fs)      (K)          (au)          (au)          (au)      (K)          (au)          (au)          (au)
+ 
+             0       0.00       0.      -0.00000      -0.00000       0.00000       0.      -0.00000      -0.00000       0.00000
+             0       0.00       0.      -0.00000      -0.00000       0.00000       0.      -0.00000      -0.00000       0.00000
+             0       0.00     138.       0.00131      -0.00000       0.00131      69.       0.00066      -0.00000       0.00066
+
+AMS application finished. Exiting.
+NORMAL TERMINATION
+     Total cpu time:       0.20
+  Total system time:       0.03
+ Total elapsed time:       4.67
