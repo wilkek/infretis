@@ -217,8 +217,10 @@ class EngineBase(metaclass=ABCMeta):
             If the velocities should be reversed, this is handled elsewhere.
 
         """
-        out_file = os.path.join(self.exe_dir, self._name_output(deffnm))
+        out_file = self._name_output(deffnm)
         pos_file, idx = config
+        print('pos', pos_file, idx)
+        print('out', str(out_file))
         if idx is None:
             if pos_file != out_file:
                 self._copyfile(pos_file, out_file)
@@ -303,8 +305,7 @@ class EngineBase(metaclass=ABCMeta):
 
         # initial_state = ensemble['system'].copy()
         # system = ensemble['system']
-
-        initial_file = self.dump_frame(system, deffnm=prefix + "_conf")
+        initial_file = self.dump_frame(system, deffnm=f"conf_{prefix}")
         msg_file.write(f"# Initial file: {initial_file}")
         logger.debug("Initial state: %s", system)
 

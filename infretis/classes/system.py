@@ -29,6 +29,8 @@ class System:
         self.vpot: float | None = None
         self.box: np.ndarray | None = np.zeros((3, 3))
         self.temperature: dict[str, float] = {}
+        print("System initiated")
+        print(self.config)
 
     def copy(self) -> System:
         """Return a copy of this system."""
@@ -38,3 +40,5 @@ class System:
     def set_pos(self, pos: tuple[str, int]) -> None:
         """Set positions for the particles."""
         self.config = (pos[0], pos[1])
+        print("System set_pos")
+        print(self.config)

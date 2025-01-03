@@ -131,6 +131,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             "fs", self.time_unit
         )
         if timestep != ams_timestep:
+            print(timestep, ams_timestep)
             logger.error("Mismatch between AMS and Pyretis timestep!")
             quit(1)
 
@@ -144,7 +145,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
                 random_velocities_method,
             )
             self.random_velocities_method = random_velocities_method
-        ams_dir = "."
+        ams_dir = '.'
         # Start AMS worker
         self.worker = AMSWorker(
             settings,
@@ -166,8 +167,12 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             initial, nsteps=0
         )  # Initialize first state, save traj
         self._add_state(initial, state)
-        self._removefile(initial)
-
+        # self._removefile(initial)
+        print('init')
+        print(initial)
+        print(molecule)
+        print(self.states)
+        print('-----------------')
         # Stop AMS worker when finished
         self._finalize = weakref.finalize(self, self.worker.stop)
 
@@ -352,13 +357,6 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         trajectory are uniformly spaced in time.
 
         """
-        if os.path.exists(
-            out_file
-        ):  # file must never be there before PrepareMD
-            self._removefile(out_file)
-        if out_file in self.states:
-            self._deletestate(out_file)
-        self.worker.PrepareMD(out_file)
 
         if traj_file in self.states:
             logger.info(
@@ -375,6 +373,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
                 idx,
                 out_file,
             )
+            print('trajfile', traj_file)
             rkf = RKFTrajectoryFile(traj_file)
             rkf.store_mddata()
             molecule = rkf.get_plamsmol()
@@ -385,8 +384,14 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
                 out_file
             ):  # file must never be there before PrepareMD
                 self._removefile(out_file)
+            if os.path.exists(
+                    out_file
+                ):  # file must never be there before PrepareMD
+                self._removefile(out_file)
             if out_file in self.states:
                 self._deletestate(out_file)
+            print('molecule',molecule)
+            print(out_file)
             self.worker.PrepareMD(out_file)
             self.worker.CreateMDState(out_file, molecule)
             if "Velocities" in rkf.mddata:
@@ -451,6 +456,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             A text description of the current status of the propagation.
 
         """
+        print('propagate_from')
         status = f"propagating with AMS (reverse = {reverse})"
         logger.info(status)
         success = False
@@ -462,7 +468,6 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         msg_file.write(
             f'# Initial order parameter: {" ".join([str(i) for i in order])}'
         )
-
         kin_enes = []
         pot_enes = []
         traj_file = os.path.join(self.exe_dir, name + "." + self.ext)
@@ -599,7 +604,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             )
             prefix = self.ens_name + str(os.getpid()) + "_" + str(counter())
             genvel = os.path.join(
-                self.exe_dir, f"gen_vel_{prefix}." + self.ext
+                self.exe_dir, f"genvel." + self.ext
             )
             if state_name in self.states:
                 # If kicking from new MD state, prepare it
@@ -682,30 +687,36 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         del self.states[source]
 
     def _copystate(self, source, dest, idx=None):
-        if dest in self.states:
-            self._deletestate(dest)
-
-        if idx is None:
-            logger.info("AMS Copying snap to snap: %s -> %s", source, dest)
-            self.states[dest] = [copy.deepcopy(self.states[source][0])]
-            self.worker.CopyMDState(source, dest)
+        if source == dest:
+            print('-----------------------------------------------------------------------------')
+            print('WARNING: source == dest in ams._copystate')
+            print('This should only happen in pytest')
+            print('-----------------------------------------------------------------------------')
+            pass 
         else:
-            logger.info(
-                "AMS Copying traj snap to snap: %s, %i -> %s",
-                source,
-                idx,
-                dest,
-            )
-            self.states[dest] = [copy.deepcopy(self.states[source][idx])]
-            self.worker.CopyMDState(source + "_" + str(idx), dest)
+            if dest in self.states:
+                self._deletestate(dest)
+
+            if idx is None:
+                logger.info("AMS Copying snap to snap: %s -> %s", source, dest)
+                self.states[dest] = [copy.deepcopy(self.states[source][0])]
+                self.worker.CopyMDState(source, dest)
+            else:
+                logger.info(
+                    "AMS Copying traj snap to snap: %s, %i -> %s",
+                    source,
+                    idx,
+                    dest,
+                )
+                self.states[dest] = [copy.deepcopy(self.states[source][idx])]
+                self.worker.CopyMDState(source + "_" + str(idx), dest)
 
     def _deletestate(self, filename):
         # Dirty usage of filename to recognize trajectories and snapshots
         # because we do not have system object with index here...
         if "traj" in os.path.basename(filename):
             logger.info("AMS Deleting traj: %s", filename)
-            # self.worker.DeleteMDState(filename)
-            # self.oldstates.append(filename)
+
             for i in range(len(self.states[filename])):
                 self.worker.DeleteMDState(filename + "_" + str(i))
         else:
