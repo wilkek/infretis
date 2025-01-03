@@ -168,7 +168,7 @@ def test_modify_velocities(tmp_path, engine):
 def test_modify_velocity_distribition(tmp_path, engine):
     """Check that velocities are generated with the correct distribution.
 
-    We compare here the generated velocitied with standard deviations from a
+    We cgit ompare here the generated velocitied with standard deviations from a
     long MD run with the given engine. This takes care of the units and other
     settings such as zero_momentum.
 
