@@ -1,5 +1,0 @@
-# Cycle: 14, status: ACC, move: None
-#     Time       Orderp
-         0     0.298854
-         1     0.300789
-         2     0.298854
