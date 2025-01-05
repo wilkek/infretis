@@ -137,23 +137,6 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             keep_crashed_workerdir=True,
             always_keep_workerdir=True,
         )
-        # Create initial MD state
-        self.input_files["conf"] = "initial"
-        initial = os.path.join(input_path, self.input_files["conf"])
-        self.worker.CreateMDState(initial, molecule)
-        if os.path.exists(
-            initial
-        ):  # Before setting PrepareMD, a file must never be there
-            self._removefile(initial)
-        self.worker.PrepareMD("../" + initial)
-        # self.exe_dir is not set yet, we don't want the file in amsworker
-        state = self.worker.MolecularDynamics(
-            initial, nsteps=0
-        )  # Initialize first state, save traj
-        self._add_state(initial, state)
-        self._removefile(initial)
-
-        # Stop AMS worker when finished
         self._finalize = weakref.finalize(self, self.worker.stop)
 
     def step(self, system, name, set_trajfile=True, set_step_to_zero=False):
@@ -685,6 +668,20 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             self.worker.CopyMDState(source + "_" + str(idx), dest)
 
     def _deletestate(self, filename):
+        """
+        Deletes the state associated with the given filename.
+
+        This method distinguishes between trajectory and snapshot files based on the presence
+        of the substring "traj" in the filename. For trajectory files, it deletes multiple states
+        indexed by appending an underscore and an index to the filename. For snapshot files, it
+        deletes the state directly.
+
+        Args:
+            filename (str): The name of the file whose state is to be deleted.
+
+        Raises:
+            KeyError: If the filename is not found in the states dictionary.
+        """
         # Dirty usage of filename to recognize trajectories and snapshots
         # because we do not have system object with index here...
         if "traj" in os.path.basename(filename):
@@ -700,6 +697,18 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         del self.states[filename]
 
     def _movefile(self, source, dest):
+        """
+        Move a file from source to destination and update internal states.
+
+        This method moves a file from the specified source path to the destination
+        path using the superclass's _movefile method. Additionally, it updates the
+        internal states if the source path is present in the states.
+
+        Args:
+            source (str): The path of the file to be moved.
+            dest (str): The destination path where the file should be moved.
+
+        """
         super()._movefile(source, dest)
         # When swapping paths and running from restart,
         # all MD states might not be in memory
@@ -707,12 +716,38 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             self._renamestate(source, dest)
 
     def _copyfile(self, source, dest):
+        """
+        Copies a file from source to destination and updates the state.
+
+        This method first calls the superclass's _copyfile method to perform the actual file copy.
+        If the destination file is already in the states, it deletes the existing state.
+        Finally, it copies the state from the source to the destination.
+
+        Args:
+            source (str): The path to the source file.
+            dest (str): The path to the destination file.
+        """
         super()._copyfile(source, dest)
         if dest in self.states:
             self._deletestate(dest)
         self._copystate(source, dest)
 
     def _removefile(self, filename, disk_only=False):
+        """
+        Remove a file from the system and optionally from the internal state.
+
+        This method removes a file by calling the superclass's _removefile method.
+        It can also remove the file from the internal state if it represents a 
+        molecular dynamics (MD) state.
+
+        Args:
+            filename (str): The name of the file to be removed.
+            disk_only (bool, optional): If True, only remove the file from the disk 
+                and not from the internal state. Defaults to False.
+
+        Returns:
+            None
+        """
         super()._removefile(filename)
         # We could use os.remove() directly, but let's be consistent
         if disk_only:
