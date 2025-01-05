@@ -9,7 +9,7 @@ from infretis.classes.engines.ase_engine import ASEEngine
 from infretis.classes.engines.cp2k import CP2KEngine
 from infretis.classes.engines.gromacs import GromacsEngine
 from infretis.classes.engines.lammps import LAMMPSEngine
-# from infretis.classes.engines.turtlemdengine import TurtleMDEngine
+from infretis.classes.engines.turtlemdengine import TurtleMDEngine
 from infretis.classes.engines.ams import AMSEngine
 from infretis.core.core import create_external, generic_factory
 
@@ -37,7 +37,7 @@ def create_engine(
     engine_map = {
         "gromacs": {"class": GromacsEngine},
         "cp2k": {"class": CP2KEngine},
-        # "turtlemd": {"class": TurtleMDEngine},
+        "turtlemd": {"class": TurtleMDEngine},
         "lammps": {"class": LAMMPSEngine},
         "ams": {"class": AMSEngine},
         "ase": {"class": ASEEngine},
@@ -122,7 +122,7 @@ def check_engine(settings: Dict[str, Any], eng_key: str) -> bool:
 
 
 def assign_engines(
-    engine_occ: Dict[str, List], eng_names, pin
+    engine_occ: Dict[str, list], eng_names, pin
 ) -> Dict[Any, int]:
     """Assign non-occupied engine(s) to a worker based on the engine_occ dict.
 
