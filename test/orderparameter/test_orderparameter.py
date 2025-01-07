@@ -1,4 +1,5 @@
 """Test the different order parameters."""
+
 import pathlib
 
 import numpy as np

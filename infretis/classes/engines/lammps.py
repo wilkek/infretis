@@ -539,7 +539,9 @@ class LAMMPSEngine(EngineBase):
 
     def _read_configuration(
         self, filename: str
-    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[list[str]]]:
+    ) -> Tuple[
+        np.ndarray, np.ndarray, Optional[np.ndarray], Optional[list[str]]
+    ]:
         """Read a configuration (a single frame trajectory)."""
         id_type, pos, vel, box = read_lammpstrj(filename, 0, self.n_atoms)
         pos, box = shift_boxbounds(pos, box)

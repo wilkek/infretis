@@ -1,6 +1,7 @@
 import numpy as np
 
-class MockRandomGenerator():
+
+class MockRandomGenerator:
     """A **mock** random generator, useful **only for testing**.
 
     This class represents a random generator that can be used for
@@ -165,5 +166,7 @@ class MockRandomGenerator():
                         _ = p.pop(idx)
                     break
         return out
-ape =  MockRandomGenerator(2)
+
+
+ape = MockRandomGenerator(2)
 print(ape.random())

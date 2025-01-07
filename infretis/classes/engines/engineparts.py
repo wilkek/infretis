@@ -157,6 +157,7 @@ def box_vector_angles(
 
 from typing import Optional
 
+
 def box_matrix_to_list(
     matrix: np.ndarray, full: bool = False
 ) -> Optional[np.ndarray]:
@@ -194,6 +195,7 @@ def box_matrix_to_list(
 
 from typing import Optional
 
+
 def get_box_from_header(header: str) -> Optional[np.ndarray]:
     """Get box lengths from a text header.
 
@@ -211,6 +213,7 @@ def get_box_from_header(header: str) -> Optional[np.ndarray]:
 
 
 from typing import Tuple
+
 
 def read_txt_snapshots(
     filename: str, data_keys: Optional[Tuple[str, ...]] = None
@@ -262,6 +265,7 @@ def read_txt_snapshots(
 
 
 from typing import Union
+
 
 def read_xyz_file(filename: Union[str, Path]) -> Iterator[Dict[str, Any]]:
     """Read files in XYZ format.
@@ -332,6 +336,7 @@ def write_xyz_trajectory(
 
 
 from typing import Union
+
 
 def convert_snapshot(
     snapshot: Dict[str, Any]

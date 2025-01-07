@@ -9,7 +9,7 @@ from datetime import datetime
 import numpy as np
 import tomli_w
 from numpy.random import default_rng
-
+from typing import Dict
 from infretis.classes.engines.factory import assign_engines
 from infretis.classes.formatter import PathStorage
 from infretis.core.core import make_dirs
@@ -18,12 +18,6 @@ from infretis.core.tis import calc_cv_vector
 logger = logging.getLogger("main")  # pylint: disable=invalid-name
 logger.addHandler(logging.NullHandler())
 DATE_FORMAT = "%Y.%m.%d %H:%M:%S"
-
-
-def spawn_rng(rgen):
-    return type(rgen)(
-        type(rgen.bit_generator)(seed=rgen.bit_generator._seed_seq.spawn(1)[0])
-    )
 
 
 class REPEX_state:
@@ -187,10 +181,10 @@ class REPEX_state:
             self.print_pick(ens_nums, pat_nums, self.cworker)
         picked = {}
 
-        child_rng = spawn_rng(self.rgen)
+        child_rng = default_rng(self.rgen.bit_generator)
         for ens_num, inp_traj in zip(ens_nums, inp_trajs):
             ens_pick = self.ensembles[ens_num + 1]
-            ens_pick["rgen"] = spawn_rng(child_rng)
+            ens_pick["rgen"] = default_rng(child_rng.bit_generator)
             picked[ens_num] = {
                 "ens": ens_pick,
                 "traj": inp_traj,
@@ -232,10 +226,10 @@ class REPEX_state:
             self.print_pick(tuple(enss), tuple(trajs0), self.cworker)
         picked = {}
 
-        child_rng = spawn_rng(self.rgen)
+        child_rng = self.rgen.spawn(1)[0]
         for ens_num, inp_traj in zip(enss, trajs):
             ens_pick = self.ensembles[ens_num + 1]
-            ens_pick["rgen"] = spawn_rng(child_rng)
+            ens_pick["rgen"] = child_rng.spawn(1)[0]
             picked[ens_num] = {
                 "ens": ens_pick,
                 "traj": inp_traj,
@@ -277,7 +271,10 @@ class REPEX_state:
                 ][md_items["pin"]]
             # spawn rgen for all engines
             ens_rgen = md_items["picked"][ens_num]["ens"]["rgen"]
-            md_items["picked"][ens_num]["rgen-eng"] = spawn_rng(ens_rgen)
+            child_seed = np.random.SeedSequence(
+                ens_rgen.bit_generator.random_raw()
+            )
+            md_items["picked"][ens_num]["rgen_eng"] = default_rng(child_seed)
             md_items["picked"][ens_num]["pin"] = md_items["pin"]
             eng_names += ens_engs[ens_num + 1]
 
