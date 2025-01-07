@@ -1,15 +1,31 @@
 #!/bin/bash
 #SBATCH --partition=XXX           # Partition name
-#SBATCH --nodelist=XXX
-#SBATCH --job-name=XXX              # Job name
-#SBATCH --nodes=1                        # Number of nodes
-#SBATCH --ntasks-per-node=16             # Number of processes per node
+#SBATCH --job-name=AMS.TEST              # Job name
+#SBATCH --nodes=2                        # Number of nodes
+#SBATCH --ntasks-per-node=1            # Number of processes per node
+#SBATCH --cpus-per-task=2
 #SBATCH --time=2400:00:00                # Time limit hrs:min:sec
 #SBATCH --error=slurm-%j.err             # SLURM error
 #SBATCH --output=slurm-%j.out            # SLURM output
-mamba init
-mamba activate molmod
+#source ~/.bashrc
+module purge
+. ~/opt/ams/ams2024.105/amsbashrc.sh
+. ~/.scm/python/AMS2024.1.venv/bin/activate
+
+export SCM_USE_LOCAL_OMPI=true
+export SCM_TMPDIR=$SLURM_TMPDIR
+
+#cp $SCMLICENSE $SCMLICENSE.backup
+export SCMLICENSE=amslicense.txt
 # Run an infRETIS calculations
-chmod +x runner 
-./runner
+export SCM_DISABLE_MPI=1 # use RETIS MPI
+export OMP_NUM_THREADS=2 # parallelization on one node 
+#When running on multiple nodes we recommend using pure MPI. To this end, set the OMP_NUM_THREADS environment variable to 1 and set other MPI-related option
+export AMS_COPYSTATE_MOVES_RESULTS=1
+
+#chmod +x restart 
+#./restart
+ chmod +x runner 
+ ./runner
+
 
