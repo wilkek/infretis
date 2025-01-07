@@ -1,5 +1,4 @@
 """Test methods for doing TIS."""
-
 import difflib
 import filecmp
 import os

@@ -5,7 +5,6 @@ import pytest
 from infretis.asyncrunner import aiorunner, future_list
 import asyncio
 
-
 class TaskError(Exception):
     """Exception class for the test task."""
 
@@ -52,7 +51,6 @@ def test_runner_attach_callable():
         loop.close()
         asyncio.set_event_loop(None)
 
-
 def test_runner_fail_start():
     """Test fail runner start missing callable."""
     loop = asyncio.new_event_loop()
@@ -65,7 +63,6 @@ def test_runner_fail_start():
         runner.stop()
         loop.close()
         asyncio.set_event_loop(None)
-
 
 def test_runner_start_and_stop():
     """Test runner start and stop."""
@@ -80,7 +77,6 @@ def test_runner_start_and_stop():
         loop.close()
         asyncio.set_event_loop(None)
 
-
 def test_runner_fail_submit():
     """Test fail runner submit work, need start."""
     loop = asyncio.new_event_loop()
@@ -93,7 +89,6 @@ def test_runner_fail_submit():
         runner.stop()
         loop.close()
         asyncio.set_event_loop(None)
-
 
 def test_runner_check_return_success():
     """Test runner return task result."""
@@ -112,7 +107,6 @@ def test_runner_check_return_success():
         loop.close()
         asyncio.set_event_loop(None)
 
-
 def test_runner_task_error():
     """Test fail runner task raised error."""
     loop = asyncio.new_event_loop()
@@ -130,7 +124,6 @@ def test_runner_task_error():
         runner.stop()
         loop.close()
         asyncio.set_event_loop(None)
-
 
 def test_runner_infretis_mode():
     """Test runner operating in infretis mode."""

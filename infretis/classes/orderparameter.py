@@ -274,9 +274,8 @@ def create_orderparameters(
             engine.order_function = create_orderparameter(settings)
 
 
-def create_orderparameter(
-    settings: Dict[str, Any]
-) -> Optional[OrderParameter]:
+
+def create_orderparameter(settings: Dict[str, Any]) -> Optional[OrderParameter]:
     """Create order parameters from settings.
 
     Args:

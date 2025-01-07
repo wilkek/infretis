@@ -1,5 +1,4 @@
 """Test methods for doing TIS."""
-
 import os
 from typing import Callable, Tuple
 from pathlib import PosixPath
@@ -448,7 +447,7 @@ def test_zero_swaps(
         )
 
         # LMR path should be generated
-        start, end, middle, _ = new_path0.check_interfaces(intf_minus)
+        start, end, middle,  _ = new_path0.check_interfaces(intf_minus)
         assert start == "L"
         assert end == "R"
         assert middle == "M"

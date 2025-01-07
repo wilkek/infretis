@@ -571,7 +571,9 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             logger.info(
                 "Generating velocities for %s, idx=%s", state_name, idx
             )
-            genvel = os.path.join(self.exe_dir, f"genvel." + self.ext)
+            genvel = os.path.join(
+                self.exe_dir, f"genvel." + self.ext
+            )
             if state_name in self.states:
                 # If kicking from new MD state, prepare it
                 self._copystate(state_name, genvel, idx=idx)
@@ -654,15 +656,11 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
 
     def _copystate(self, source, dest, idx=None):
         if source == dest:
-            print(
-                "-----------------------------------------------------------------------------"
-            )
-            print("WARNING: source == dest in ams._copystate")
-            print("This should only happen in pytest")
-            print(
-                "-----------------------------------------------------------------------------"
-            )
-            pass
+            print('-----------------------------------------------------------------------------')
+            print('WARNING: source == dest in ams._copystate')
+            print('This should only happen in pytest')
+            print('-----------------------------------------------------------------------------')
+            pass 
         else:
             if dest in self.states:
                 self._deletestate(dest)
@@ -751,12 +749,12 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         Remove a file from the system and optionally from the internal state.
 
         This method removes a file by calling the superclass's _removefile method.
-        It can also remove the file from the internal state if it represents a
+        It can also remove the file from the internal state if it represents a 
         molecular dynamics (MD) state.
 
         Args:
             filename (str): The name of the file to be removed.
-            disk_only (bool, optional): If True, only remove the file from the disk
+            disk_only (bool, optional): If True, only remove the file from the disk 
                 and not from the internal state. Defaults to False.
 
         Returns:

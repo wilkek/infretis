@@ -1,5 +1,4 @@
 """Test velocity functions in all engines."""
-
 import pathlib
 
 import numpy as np
@@ -83,7 +82,6 @@ def return_cp2k_engine():
     }
     return engine
 
-
 def return_ase_engine():
     """Set up an ase engine for the H2 system."""
     ase_toml_path = HERE / "../../examples/ase/H2/infretis0.toml"
@@ -91,9 +89,7 @@ def return_ase_engine():
     toml_file = ase_toml_path
     with open(toml_file, "rb") as rfile:
         config = tomli.load(rfile)
-    config["engine"]["calculator_settings"]["module"] = str(
-        calc_path.resolve()
-    )
+    config["engine"]["calculator_settings"]["module"] = str(calc_path.resolve())
     engine = create_engine(config)
     engine.input_path = HERE / "../../examples/ase/H2"
     engine.vel_settings = {
@@ -101,13 +97,16 @@ def return_ase_engine():
     }
     return engine
 
-
 def return_ams_engine():
     """Set up an ams engine for the H2 system."""
     ams_input_path = pathlib.Path("ams_inp/")
+    
+    engine = AMSEngine(ams_input_path, 0.001,1)
+    engine.vel_settings = {
+        "zero_momentum": True,
+        "aimless": True
 
-    engine = AMSEngine(ams_input_path, 0.001, 1)
-    engine.vel_settings = {"zero_momentum": True, "aimless": True}
+    }
     engine.ens_name = "test"
     return engine
 
@@ -178,8 +177,8 @@ def test_modify_velocity_distribition(tmp_path, engine):
     if type(engine.input_path) == str:
         initial_conf = pathlib.Path(engine.input_path + f"/conf.{engine.ext}")
     else:
-        initial_conf = engine.input_path / f"conf.{engine.ext}"
-
+        initial_conf = engine.input_path / f"conf.{engine.ext}"    
+        
     engine.exe_dir = folder
 
     system = System()

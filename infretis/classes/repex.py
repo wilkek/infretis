@@ -19,12 +19,8 @@ logger = logging.getLogger("main")  # pylint: disable=invalid-name
 logger.addHandler(logging.NullHandler())
 DATE_FORMAT = "%Y.%m.%d %H:%M:%S"
 
-
 def spawn_rng(rgen):
-    return type(rgen)(
-        type(rgen.bit_generator)(seed=rgen.bit_generator._seed_seq.spawn(1)[0])
-    )
-
+    return type(rgen)(type(rgen.bit_generator)(seed=rgen.bit_generator._seed_seq.spawn(1)[0]))
 
 class REPEX_state:
     """Define the REPEX object."""

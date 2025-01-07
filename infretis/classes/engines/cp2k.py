@@ -18,16 +18,7 @@ import signal
 import subprocess
 from pathlib import Path
 from time import sleep
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    TypedDict,
-    Optional,
-    Union,
-    Tuple,
-    List,
-    Dict,
-)
+from typing import TYPE_CHECKING, Any, TypedDict, Optional, Union, Tuple, List, Dict
 
 import numpy as np
 
@@ -103,9 +94,7 @@ class SectionNode:
             self.data = []
         self.children: set[SectionNode] = set()
         self.level = 0
-        self.parents: Optional[List[str]] = (
-            None  # TODO: Check if this can be []
-        )
+        self.parents: Optional[List[str]] = None  # TODO: Check if this can be []
 
     def add_child(self, child: SectionNode) -> None:
         """Add a sub-section to the current section."""
@@ -655,7 +644,6 @@ class CP2KEngine(EngineBase):
         sleep: A time in seconds, used to wait for files to be ready.
 
     """
-
     def __init__(
         self,
         cp2k: str,
@@ -1011,9 +999,7 @@ class CP2KEngine(EngineBase):
     @staticmethod
     def _read_configuration(
         filename: Union[str, Path],
-    ) -> Tuple[
-        np.ndarray, np.ndarray, Optional[np.ndarray], Optional[List[str]]
-    ]:
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[List[str]]]:
         """Read a CP2K output configuration from a file.
 
         Args:

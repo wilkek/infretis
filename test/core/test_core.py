@@ -1,5 +1,4 @@
 """Test methods from infretis.core.core"""
-
 import errno
 import inspect
 import logging
