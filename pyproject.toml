@@ -6,18 +6,18 @@ authors = [
     "Daniel Zhang <daniel.t.zhang@ntnu.no>",
     "Lukas Baldauf <lukas.baldauf@ntnu.no>",
     "Anders Lervik <andersle@gmail.com>",
-    "Titus Sebastiaan van Erp <titus.van.erp@ntnu.no>"
 ]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
-numpy = "^1.26.0"
+python = ">=3.8.12,<3.13"
+numpy = "^1.21.2"
+matplotlib = "^3.5.1"
 tomli = "^2.0.1"
 tomli-w = "^1.0.0"
-turtlemd = "^2023.3"
-ase = "^3.20.0"
+distributed = "^2023.3.0"
+#turtlemd = "^2023.3"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.282"
@@ -48,11 +48,16 @@ show_error_codes = true
 plugins = "numpy.typing.mypy_plugin"
 
 [[tool.mypy.overrides]]
-module = ["matplotlib.*", "scipy.optimize.*", "turtlemd.*", "tomli"]
+module = "matplotlib.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "scipy.optimize.*"
 ignore_missing_imports = true
 
 [tool.poetry.scripts]
 infretisrun = "infretis.bin:infretisrun"
+infretisanalyze = "infretis.bin:infretisanalyze"
 
 [tool.pytest.ini_options]
 markers = [
