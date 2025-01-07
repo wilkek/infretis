@@ -249,7 +249,22 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         return xyz, vel, box, None
 
     def set_mdrun(self, md_items):
-        """Remove or rename?"""
+        """
+        Set up the molecular dynamics run with the given parameters.
+
+        Parameters:
+        md_items (dict): A dictionary containing the following keys
+        that are of importance here:
+            - "exe_dir" (str): The directory where the executable is located.
+            - "ens" (dict): A dictionary containing ensemble information with the key:
+                - "ens_name" (str): The name of the ensemble.
+
+        This method performs the following actions:
+        1. Sets the executable directory and ensemble name.
+        2. Logs the executable directory information.
+        3. Identifies and deletes old states that are no longer in use.
+        4. Updates the list of old states to the current states.
+        """
         self.exe_dir = md_items["exe_dir"]
         self.ens_name = md_items["ens"]["ens_name"] + "_"
         logger.info(
@@ -319,7 +334,6 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         trajectory are uniformly spaced in time.
 
         """
-
         if traj_file in self.states:
             logger.info(
                 "AMS extracting frame: %s, %i -> %s", traj_file, idx, out_file
@@ -669,7 +683,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
 
     def _deletestate(self, filename):
         """
-        Deletes the state associated with the given filename.
+        Delete the state associated with the given filename.
 
         This method distinguishes between trajectory and snapshot files based on the presence
         of the substring "traj" in the filename. For trajectory files, it deletes multiple states
@@ -717,7 +731,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
 
     def _copyfile(self, source, dest):
         """
-        Copies a file from source to destination and updates the state.
+        Copy a file from source to destination and updates the state.
 
         This method first calls the superclass's _copyfile method to perform the actual file copy.
         If the destination file is already in the states, it deletes the existing state.
