@@ -10,6 +10,7 @@ Important classes defined here
 AMSEngine (:py:class:`.AMSEngine`)
     A class responsible for interfacing AMS.
 """
+
 import copy
 import logging
 import os
@@ -242,6 +243,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
         # from the AMSWorker. Next state is always the last one.
         system.vpot = states[-1].get_potentialenergy(unit=self.ene_unit)
         system.ekin = states[-1].get_kineticenergy(unit=self.ene_unit)
+        system.etot = system.vpot + system.ekin
+        system.temp = states[-1].get_temperature()
 
         # Save state
         self._add_state(new_state, states[-1])
@@ -570,6 +573,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
 
         kin_enes = []
         pot_enes = []
+        tot_enes = []
+        temps = []
         traj_file = os.path.join(self.exe_dir, name + "." + self.ext)
         # First, process input snapshot
         initial = system.config[0]
@@ -605,9 +610,11 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             }
 
             phase_point = self.snapshot_to_system(system, snapshot)
-            status, success, stop, _ = self.add_to_path(
-                path, phase_point, left, right
-            )
+            (
+                status,
+                success,
+                stop,
+            ) = self.add_to_path(path, phase_point, left, right)
 
             kin_enes.append(
                 self.states[traj_file][i].get_kineticenergy(unit=self.ene_unit)
@@ -617,6 +624,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
                     unit=self.ene_unit
                 )
             )
+            tot_enes.append(kin_enes[-1] + pot_enes[-1])
+            temps.append(self.states[traj_file][i].get_temperature())
 
             logger.info("OP: %f in frame %s %i", order[0], traj_file, i)
 
@@ -639,7 +648,7 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
                 set_step_to_zero=set_step_to_zero,
             )
         logger.info("AMS propagation done, obtaining energies")
-        path.update_energies(kin_enes, pot_enes)
+        path.update_energies(kin_enes, pot_enes, tot_enes, temps)
         msg_file.write("# Propagation done.")
         msg_file.flush()
         return success, status
@@ -739,6 +748,8 @@ class AMSEngine(EngineBase):  # , metaclass=Singleton):
             system.vel_rev = False
             system.ekin = kin_new
             system.vpot = state.get_potentialenergy(unit=self.ene_unit)
+            system.etot = system.ekin + system.vpot
+            system.temp = state.get_temperature()
             self._add_state(genvel, state, rewrite=True)
         else:  # Soft velocity change, from a Gaussian distribution:
             msgtxt = "AMS engine only support aimless shooting!"

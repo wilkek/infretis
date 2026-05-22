@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "infretis"
-version = "2025.4"
+version = "2026.1.1"
 description = "Infinite swapping parallel RETIS"
 authors = [
     "Daniel Zhang <daniel.t.zhang@ntnu.no>",
@@ -31,14 +31,13 @@ pre-commit = "^3.3.3"
 
 [tool.ruff]
 line-length = 79
-select = ["F", "E", "W", "I001", "UP"]
-ignore-init-module-imports = true
+lint.select = ["F", "E", "W", "I001", "UP"]
 target-version = "py38"
 
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.black]

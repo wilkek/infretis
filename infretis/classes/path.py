@@ -45,7 +45,6 @@ class Path:
         )
         self.path_number = None
         self.weights: Optional[Tuple[float, ...]] = None
-        self.weight: float = 0.0
         self.phasepoints: List[System] = []
         self.time_origin = time_origin
 
@@ -150,18 +149,14 @@ class Path:
         """Pick a random shooting point from the path."""
         ### TODO: probably need an unittest for this to check if correct.
         ### idx = rgen.random_integers(1, self.length - 2)
-        idx = rgen.integers(1, self.length - 1)
+        idx = int(rgen.integers(1, self.length - 1))
         order = self.phasepoints[idx].order[0]
         logger.debug(f"Selected point with orderp {order}")
         return self.phasepoints[idx], idx
 
-    def append(self, phasepoint: System) -> bool:
+    def append(self, phasepoint: System) -> None:
         """Append a new phase point to the path."""
-        if self.maxlen is None or self.length < self.maxlen:
-            self.phasepoints.append(phasepoint)
-            return True
-        logger.debug("Max length exceeded. Could not append to path.")
-        return False
+        self.phasepoints.append(phasepoint)
 
     def get_move(self) -> Optional[str]:
         """Return the move used to generate the path."""
@@ -193,12 +188,7 @@ class Path:
             The updated path object (self).
         """
         for phasepoint in other.phasepoints:
-            app = self.append(phasepoint.copy())
-            if not app:
-                logger.warning(
-                    "Truncated path at %d while adding paths", self.length
-                )
-                return self
+            self.append(phasepoint.copy())
         return self
 
     def copy(self) -> Path:
@@ -209,7 +199,6 @@ class Path:
         new_path.status = self.status
         new_path.time_origin = self.time_origin
         new_path.generated = self.generated
-        new_path.maxlen = self.maxlen
         new_path.path_number = self.path_number
         new_path.weights = self.weights
         return new_path
@@ -305,6 +294,8 @@ class Path:
         self,
         ekin: Union[np.ndarray, List[float]],
         vpot: Union[np.ndarray, List[float]],
+        etot: Union[np.ndarray, List[float]],
+        temp: Union[np.ndarray, List[float]],
     ) -> None:
         """Update the energies for the phase points.
 
@@ -315,38 +306,26 @@ class Path:
         Args:
             ekin : The kinetic energies to set.
             vpot : The potential energies to set.
+            etot : The total energies to set.
+            temp : The temperature to set.
         """
-        if len(ekin) != len(vpot):
-            logger.debug(
-                "Kinetic and potential energies have different length."
-            )
-        if len(ekin) != len(self.phasepoints):
-            logger.debug(
-                "Length of kinetic energy and phase points differ %d != %d.",
-                len(ekin),
-                len(self.phasepoints),
-            )
-        if len(vpot) != len(self.phasepoints):
-            logger.debug(
-                "Length of potential energy and phase points differ %d != %d.",
-                len(vpot),
-                len(self.phasepoints),
-            )
-        for i, phasepoint in enumerate(self.phasepoints):
-            try:
-                vpoti = vpot[i]
-            except IndexError:
-                logger.warning(
-                    "Ran out of potential energies, setting to None."
+        energies = [ekin, vpot, etot, temp]
+        names = ["ekin", "vpot", "etot", "temp"]
+
+        len_p = len(self.phasepoints)
+        for ene, name in zip(energies, names):
+            len_e = len(ene)
+            if len_e != len_p:
+                logger.debug(
+                    f"Length of {name} and phasepoints differ {len_e}!={len_p}"
                 )
-                vpoti = None
-            try:
-                ekini = ekin[i]
-            except IndexError:
-                logger.warning("Ran out of kinetic energies, setting to None.")
-                ekini = None
-            phasepoint.vpot = vpoti
-            phasepoint.ekin = ekini
+            for i, phasepoint in enumerate(self.phasepoints):
+                try:
+                    enei = ene[i]
+                except IndexError:
+                    logger.warning(f"Ran out of {name}, setting to None.")
+                    enei = None
+                setattr(phasepoint, name, enei)
 
 
 def paste_paths(
@@ -402,22 +381,13 @@ def paste_paths(
     time_origin = path_back.time_origin - path_back.length + 1
     new_path = path_back.empty_path(maxlen=maxlen, time_origin=time_origin)
     for phasepoint in reversed(path_back.phasepoints):
-        app = new_path.append(phasepoint)
-        if not app:
-            msg = "Truncated while pasting backwards at: {}"
-            msg = msg.format(new_path.length)
-            logger.warning(msg)
-            return new_path
+        new_path.append(phasepoint)
     first = True
     for phasepoint in path_forw.phasepoints:
         if first and overlap:
             first = False
             continue
-        app = new_path.append(phasepoint)
-        if not app:
-            msg = f"Truncated path at: {new_path.length}"
-            logger.warning(msg)
-            return new_path
+        new_path.append(phasepoint)
     return new_path
 
 
@@ -473,7 +443,10 @@ def _load_energies_for_path(path: Path, dirname: str) -> None:
         with EnergyPathFile(energy_file_name, "r") as energyfile:
             energy = next(energyfile.load())
             path.update_energies(
-                energy["data"]["ekin"], energy["data"]["vpot"]
+                energy["data"]["ekin"],
+                energy["data"]["vpot"],
+                energy["data"].get("etot", []),
+                energy["data"].get("temp", []),
             )
     except FileNotFoundError:
         pass

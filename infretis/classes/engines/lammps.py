@@ -13,11 +13,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from infretis.classes.engines.cp2k import kinetic_energy, reset_momentum
 from infretis.classes.engines.enginebase import EngineBase
 from infretis.classes.engines.engineparts import (
     ReadAndProcessOnTheFly,
+    kinetic_energy,
     lammpstrj_reader,
+    reset_momentum,
 )
 
 if TYPE_CHECKING:  # pragma: nocover
@@ -36,6 +37,7 @@ def write_lammpstrj(
     vel: np.ndarray,
     box: Optional[np.ndarray],
     append: bool = False,
+    triclinic: bool = False,
 ) -> None:
     """Write a LAMMPS trajectory frame in .lammpstrj format.
 
@@ -50,14 +52,13 @@ def write_lammpstrj(
         box: The simulation box to write (if available).
         append: If True, the `outfile` will be appended to,
             otherwise, `outfile` will be overwritten.
+        triclinic: If true, write in triclinic box format.
     """
     filemode = "a" if append else "w"
+    box_header = "xy xz yz " if triclinic else ""
     with open(outfile, filemode) as writefile:
-        to_write = (
-            f"ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS\n{pos.shape[0]}\n\
-ITEM: BOX BOUNDS pp pp pp\n"
-            ""
-        )
+        to_write = f"ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS\n\
+{pos.shape[0]}\nITEM: BOX BOUNDS {box_header}pp pp pp\n"
 
         if box is not None:
             for box_vector in box:
@@ -226,8 +227,8 @@ def get_atom_masses(lammps_data: Union[str, Path], atom_style) -> np.ndarray:
         raise NotImplementedError(f"Style {atom_style}' not supported yet.")
     n_atoms = 0
     n_atom_types = 0
-    atom_type_masses = np.zeros(0)
-    atoms = np.zeros(0)
+    atom_type_masses = np.empty((0, 2))
+    atoms = np.empty(0)
     with open(lammps_data) as readfile:
         for i, line in enumerate(readfile):
             spl = line.split()
@@ -250,12 +251,34 @@ def get_atom_masses(lammps_data: Union[str, Path], atom_style) -> np.ndarray:
                 # sort atoms according to index
                 idx = np.argsort(atoms[:, 0])
                 atoms = atoms[idx]
+
     # if we did not find all of the information
     if n_atoms == 0 or n_atom_types == 0:
-        raise ValueError(
-            f"Could not read atom masses from {lammps_data}. \
-                         Found {n_atoms} atoms and {n_atom_types} atom_types."
+        raise ValueError(f"Could not read atom masses from {lammps_data}. \
+                         Found {n_atoms} atoms and {n_atom_types} atom_types.")
+
+    if np.shape(atoms)[0] == 0 or np.any(np.isnan(atoms)):
+        raise ValueError(f"Could not read 'Atoms' from {lammps_data}")
+
+    if np.shape(atom_type_masses)[0] == 0 or np.any(
+        np.isnan(atom_type_masses)
+    ):
+        raise ValueError(f"Could not read 'Masses' from {lammps_data}")
+
+    if np.shape(atoms)[0] != n_atoms:
+        msg = (
+            f"Found {n_atoms} atoms but read {np.shape(atoms)[0]} "
+            f"from 'Atoms' in {lammps_data}"
         )
+        raise ValueError(msg)
+
+    if np.shape(atom_type_masses)[0] != n_atom_types:
+        msg = (
+            f"Found {n_atom_types} atom types but read "
+            f"{np.shape(atom_type_masses)[0]} from 'Masses' in {lammps_data}"
+        )
+        raise ValueError(msg)
+
     masses = np.zeros((n_atoms, 1))
     for atom_type in range(1, n_atom_types + 1):
         idx = np.where(atoms[:, col[atom_style]] == atom_type)[0]
@@ -311,8 +334,8 @@ def check_lammps_input(lmp_inp):
 
     with open(lmp_inp) as rfile:
         for line in rfile:
+            curr_cmd = " ".join(line.split())
             for i, lmp_cmd in enumerate(mandatory):
-                curr_cmd = " ".join(line.split())
                 if lmp_cmd in curr_cmd:
                     mandatory.pop(i)
         if len(mandatory) != 0:
@@ -320,6 +343,20 @@ def check_lammps_input(lmp_inp):
                 f"Did not find the following commands in {lmp_inp}:\n"
                 f"{mandatory}"
             )
+
+
+def check_lammps_data(lmp_data):
+    """Perform checks on a lammps.data file.
+
+    E.g. to retrieve the box type (triclinic or not).
+    """
+    important_info = {"triclinic": False}
+    with open(lmp_data) as rfile:
+        for line in rfile:
+            processed_line = " ".join(line.split())
+            if "xy xz yz" in processed_line:
+                important_info["triclinic"] = True
+    return important_info
 
 
 class LAMMPSEngine(EngineBase):
@@ -365,6 +402,7 @@ class LAMMPSEngine(EngineBase):
         atom_style: str = "full",
         exe_path: Path = Path(".").resolve(),
         sleep: float = 0.1,
+        triclinic: bool = False,
     ):
         """Initialize the LAMMPS simulation engine.
 
@@ -400,6 +438,9 @@ class LAMMPSEngine(EngineBase):
         self.atom_style = atom_style
         self.mass = get_atom_masses(self.input_files["data"], self.atom_style)
         self.n_atoms = self.mass.shape[0]
+        # check lammps.data settings for box info
+        data_info = check_lammps_data(self.input_files["data"])
+        self.triclinic = data_info["triclinic"]
         self.temperature = temperature
         self.kb = 1.987204259e-3  # kcal/(mol*K)
         self._beta = 1 / (self.kb * self.temperature)
@@ -514,7 +555,7 @@ class LAMMPSEngine(EngineBase):
                             "vel_rev": reverse,
                         }
                         phase_point = self.snapshot_to_system(system, snapshot)
-                        status, success, stop, add = self.add_to_path(
+                        status, success, stop = self.add_to_path(
                             path, phase_point, left, right
                         )
                         if stop:
@@ -572,14 +613,18 @@ class LAMMPSEngine(EngineBase):
         end = (step_nr + 1) * self.subcycles
         ekin: Union[np.ndarray, list[float]] = energy.get("KinEng", [])
         vpot: Union[np.ndarray, list[float]] = energy.get("PotEng", [])
-        path.update_energies(ekin[:end], vpot[:end])
+        etot: Union[np.ndarray, list[float]] = energy.get("TotEng", [])
+        temp: Union[np.ndarray, list[float]] = energy.get("Temp", [])
+        path.update_energies(ekin[:end], vpot[:end], etot[:end], temp[:end])
         self._removefile(run_input)
         return success, status
 
     def _extract_frame(self, traj_file: str, idx: int, out_file: str) -> None:
         """Extract a frame from a trajectory to a new file."""
         id_type, pos, vel, box = read_lammpstrj(traj_file, idx, self.n_atoms)
-        write_lammpstrj(out_file, id_type, pos, vel, box)
+        write_lammpstrj(
+            out_file, id_type, pos, vel, box, triclinic=self.triclinic
+        )
 
     def _read_configuration(
         self, filename: str
@@ -595,7 +640,9 @@ class LAMMPSEngine(EngineBase):
         """Reverse the velocities of a configuration."""
         id_type, pos, vel, box = read_lammpstrj(filename, 0, self.n_atoms)
         vel *= -1.0
-        write_lammpstrj(outfile, id_type, pos, vel, box)
+        write_lammpstrj(
+            outfile, id_type, pos, vel, box, triclinic=self.triclinic
+        )
 
     def modify_velocities(
         self, system: System, vel_settings: Dict[str, Any]
@@ -636,7 +683,9 @@ class LAMMPSEngine(EngineBase):
             vel = reset_momentum(vel, mass)
 
         conf_out = os.path.join(self.exe_dir, f"genvel.{self.ext}")
-        write_lammpstrj(conf_out, id_type, xyz, vel, box)
+        write_lammpstrj(
+            conf_out, id_type, xyz, vel, box, triclinic=self.triclinic
+        )
         kin_new = kinetic_energy(vel, mass)[0]
         system.config = (conf_out, 0)
         system.ekin = kin_new

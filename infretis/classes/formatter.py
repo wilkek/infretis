@@ -560,7 +560,11 @@ class FileIO(OutputBase):
 
     def flush(self) -> None:
         """Flush file buffers to file."""
-        if self.fileh is not None and not self.fileh.closed:
+        if (
+            self.fileh is not None
+            and not self.fileh.closed
+            and self.fileh.writable()
+        ):
             self.fileh.flush()
             os.fsync(self.fileh.fileno())
 
@@ -693,8 +697,6 @@ class EnergyFormatter(OutputFormatter):
 
 class EnergyPathFormatter(EnergyFormatter):
     """A class for formatting energy data for paths."""
-
-    HEADER = {"labels": ["Time", "Potential", "Kinetic"], "width": [10, 14]}
 
     def __init__(self):
         """Initialise."""

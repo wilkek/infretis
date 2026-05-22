@@ -12,20 +12,29 @@ import subprocess
 from io import BufferedReader, BufferedWriter
 from pathlib import Path
 from time import sleep
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 
-from infretis.classes.engines.cp2k import kinetic_energy, reset_momentum
 from infretis.classes.engines.enginebase import EngineBase
 from infretis.classes.engines.engineparts import (
     box_matrix_to_list,
+    kinetic_energy,
     look_for_input_files,
+    reset_momentum,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Iterator
-    from io import BufferedReader, BufferedWriter
 
     from infretis.classes.formatter import FileIO
     from infretis.classes.path import Path as InfPath
@@ -38,7 +47,6 @@ _GROMACS_MAGIC = 1993
 _G96_FMT = "{0:}{1:15.9f}{2:15.9f}{3:15.9f}\n"
 _G96_BOX_FMT = "{:15.9f}" * 9 + "\n"
 _G96_BOX_FMT_3 = "{:15.9f}" * 3 + "\n"
-_GROMACS_MAGIC = 1993
 _DIM = 3
 _TRR_VERSION = "GMX_trn_file"
 _SIZE_FLOAT = struct.calcsize("f")
@@ -285,7 +293,7 @@ class GromacsEngine(EngineBase):
                     )
                 )
             ).encode(),
-            "path": b"Potential\nKinetic-En.",
+            "path": b"Potential\nKinetic-En.\nTotal-Energy\nTemperature",
         }
         if terms not in allowed_terms:
             return allowed_terms["path"]
@@ -529,7 +537,7 @@ class GromacsEngine(EngineBase):
                     "vel_rev": reverse,
                 }
                 phase_point = self.snapshot_to_system(system, snapshot)
-                status, success, stop, _ = self.add_to_path(
+                status, success, stop = self.add_to_path(
                     path, phase_point, left, right
                 )
                 if stop:
@@ -541,7 +549,12 @@ class GromacsEngine(EngineBase):
         msg_file.write("# Propagation done.")
         msg_file.write(f'# Reading energies from: {out_files["edr"]}')
         energy = self.get_energies(out_files["edr"])
-        path.update_energies(energy["kinetic en."], energy["potential"])
+        path.update_energies(
+            energy["kinetic en."],
+            energy["potential"],
+            energy["total energy"],
+            energy["temperature"],
+        )
         logger.debug("Removing GROMACS output after propagate.")
         remove = [
             val
@@ -680,6 +693,8 @@ class GromacsEngine(EngineBase):
             system.vel_rev = False
             system.ekin = kin_new
             system.vpot = energy["potential"][-1]
+            system.etot = energy["total energy"][-1]
+            system.temp = energy["temperature"][-1]
 
         # generate velocities by drawing random numbers
         else:
@@ -1292,7 +1307,10 @@ def read_matrix(
 
 
 def read_coord(
-    fileh: BufferedReader, endian: str, double: bool, natoms: int
+    fileh: BufferedReader,
+    endian: Literal["<", ">"],
+    double: bool,
+    natoms: int,
 ) -> np.ndarray:
     """Read a coordinate section from the TRR file.
 
@@ -1311,12 +1329,12 @@ def read_coord(
         The coordinates as a numpy array. It will have
             ``natoms`` rows and ``_DIM`` columns.
     """
-    if double:
-        fmt = f"{endian}{natoms * _DIM}d"
-    else:
-        fmt = f"{endian}{natoms * _DIM}f"
-    read = read_struct_buff(fileh, fmt)
-    mat = np.array(read)
+    dt = np.dtype("double" if double else "float32")
+    dt = dt.newbyteorder(endian)
+    try:
+        mat = np.fromfile(fileh, dtype=dt, count=natoms * _DIM)
+    except ValueError:
+        raise EOFError()
     mat.shape = (natoms, _DIM)
     return mat
 
