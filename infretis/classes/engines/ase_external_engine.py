@@ -16,7 +16,7 @@ from ase.md.velocitydistribution import (
     Stationary,
 )
 from ase.md.verlet import VelocityVerlet
-
+from ase.md.nose_hoover_chain import MTKNPT
 from infretis.classes.engines.enginebase import EngineBase
 from infretis.classes.formatter import FileIO
 from infretis.classes.path import Path as InfPath
@@ -62,10 +62,11 @@ class ASEExternalEngine(EngineBase):
         self,
         timestep: float,
         temperature: float,
-        subcycles: int,
-        input_path: str,
-        integrator: str,
-        calculator_settings: Dict,
+        pressure: float = -1.0,
+        subcycles: int = 1,
+        input_path: str = "",
+        integrator: str = "",
+        calculator_settings: Dict = None,
         langevin_friction: float = -1.0,
         langevin_fixcm: float = -1.0,
         python: str = "python",
@@ -84,6 +85,7 @@ class ASEExternalEngine(EngineBase):
         self.timestep = timestep
         self.subcycles = subcycles
         self.temperature = temperature
+        self.pressure = pressure
         self.input_path = Path(exe_path) / input_path
         self.ext = "traj"
         self.name = "ase"
@@ -98,6 +100,7 @@ class ASEExternalEngine(EngineBase):
         integrator = integrator.lower()
         integrator_map = {
             "langevin": Langevin,
+            "full-mtk": MTKNPT,     #allows angles and box to fluctuate 
             "velocityverlet": VelocityVerlet,
             "external": ExternalIntegrator,
         }
@@ -116,6 +119,19 @@ class ASEExternalEngine(EngineBase):
                 "temperature_K": self.temperature,
                 "friction": langevin_friction / units.fs,
                 "fixcm": langevin_fixcm,
+            }
+        elif integrator == "full-mtk":
+            self.integrator_settings = {
+                "timestep": self.timestep * units.fs,
+                "temperature_K": self.temperature,
+                # ASE MTKNPT expects pressure_au in eV/Ang^3.
+                # If self.pressure is provided in bar, convert via multiplication.
+                "pressure_au": self.pressure * units.bar,
+                "tdamp": 100 * self.timestep * units.fs,
+                "pdamp": 1000 * self.timestep * units.fs,
+                "tchain": 5,
+                "pchain": 5,
+                # "fixcm": True,  # TODO: make this a parameter
             }
         elif integrator == "velocityverlet":
             self.integrator_settings = {
