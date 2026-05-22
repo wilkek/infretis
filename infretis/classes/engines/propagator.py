@@ -1,5 +1,6 @@
 import os
 import sys
+import inspect
 from ase.md.langevin import Langevin
 from ase.md.verlet import VelocityVerlet
 from ase.io import read
@@ -16,7 +17,7 @@ import tomli
 import pathlib
 
 # if idle for more than this nr. of seconds we shut down the engine
-# TIMEOUT = 1000
+TIMEOUT = 600
 START = "INFINITY_START"
 SLEEP = 1.5
 
@@ -47,8 +48,12 @@ while True:
     # wait for start file to appear
     if not os.path.exists(START):
         time.sleep(SLEEP)
-        print(f"{wname}: Sleeping ... now been idle for {idle_time} s", file = logger, flush=True)
+        print(f"{wname}: Sleeping ... now been idle for {idle_time} s", file=logger, flush=True)
         idle_time += SLEEP
+        if idle_time >= TIMEOUT:
+            print(f"{wname}: Idle time exceeded {TIMEOUT} seconds. Killing process.", file=logger, flush=True)
+            logger.close()
+            os._exit(1)
     else:
         print(f"{wname}: Found {START} file", file=logger, flush=True)
         # try to read start file
@@ -57,14 +62,22 @@ while True:
                 print(f"{wname}: Now the START file is missing... Now idle for {idle_time}", file=logger, flush=True)
                 time.sleep(SLEEP)
                 idle_time += SLEEP
+                if idle_time >= TIMEOUT:
+                    print(f"{wname}: Idle time exceeded {TIMEOUT} seconds. Killing process.", file=logger, flush=True)
+                    logger.close()
+                    os._exit(1)
             else:
                 with open(START, "r") as rfile:
                     line = rfile.readline()
                     spl = line.split()
                     if len(spl) != 6:
-                        print(f"{wname}: STARTFILE_ERR not 6 columns in file; content is '{spl}'. Now idle for {idle_time} s", file = logger, flush=True)
+                        print(f"{wname}: STARTFILE_ERR not 6 columns in file; content is '{spl}'. Now idle for {idle_time} s", file=logger, flush=True)
                         time.sleep(SLEEP)
                         idle_time += SLEEP
+                        if idle_time >= TIMEOUT:
+                            print(f"{wname}: Idle time exceeded {TIMEOUT} seconds. Killing process.", file=logger, flush=True)
+                            logger.close()
+                            os._exit(1)
                     # finally escape the loop if we get 6 values
                     else:
                         print(f"{wname} " + line, file=logger, flush=True)
@@ -92,13 +105,19 @@ while True:
         msg_file.open()
 
         dyn = Integrator(atoms, **int_set)
+        step_accepts_forces = None
+        try:
+            step_accepts_forces = "forces" in inspect.signature(dyn.step).parameters
+        except (TypeError, ValueError):
+            # Some callables do not expose signatures; detect support dynamically.
+            pass
         traj = traj = Trajectory(traj_file, "w")
         step_nr = 0
         ekin = []
         vpot = []
         temp = []
         etot = []
-        calc.calculate(atoms)
+        calc.calculate(atoms, properties=["energy", "forces"], system_changes=["positions", "numbers", "cell"])
         atoms.calc = calc
         t0 = time.time()
         # integrator step is taken at the end of every loop,
@@ -116,6 +135,7 @@ while True:
                 etot.append(ekin[-1] + vpot[-1])
                 # NOTE: Writing atoms removes all results from
                 # the calculator (and therefore atoms)!
+                atoms.wrap()
                 traj.write(atoms, forces=forces, energy=energy, stress=stress)
                 system.pos = atoms.positions
                 system.vel = atoms.get_velocities()
@@ -137,7 +157,19 @@ while True:
                 if stop:
                     break
                 step_nr += 1
-            dyn.step(forces=forces)
+            if step_accepts_forces is False:
+                dyn.step()
+            else:
+                try:
+                    dyn.step(forces=forces)
+                    if step_accepts_forces is None:
+                        step_accepts_forces = True
+                except TypeError as err:
+                    if "unexpected keyword argument 'forces'" in str(err):
+                        dyn.step()
+                        step_accepts_forces = False
+                    else:
+                        raise
         t1 = time.time()
 
         msg_file.write("# Propagation done.")
